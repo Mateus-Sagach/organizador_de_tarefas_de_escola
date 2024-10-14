@@ -1,0 +1,119 @@
+<!DOCTYPE html> 
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Funcionários</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Controle de Funcionários da Escola/Creche</h1>
+
+    <!-- Cadastro de Funcionários -->
+    <section>
+        <h2>Cadastrar Funcionário</h2>
+        <input type="text" id="nomeFuncionario" placeholder="Nome do Funcionário">
+        <button onclick="cadastrarFuncionario()">Cadastrar</button>
+        <div id="mensagemErroFuncionario" class="erro"></div>
+        <ul id="listaFuncionarios"></ul>
+    </section>
+
+    <!-- Cadastro de Atividades -->
+    <!--
+    <section>
+        <h2>Cadastrar Atividade</h2>
+        <input type="text" id="nomeAtividade" placeholder="Nome da Atividade">
+        <select id="diaSemana">
+            <option value="Segunda">Segunda</option>
+            <option value="Terça">Terça</option>
+            <option value="Quarta">Quarta</option>
+            <option value="Quinta">Quinta</option>
+            <option value="Sexta">Sexta</option>
+            <option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+        </select>
+        <select id="horaAtividade">
+            <option value="6:00">6:00</option>
+            <option value="7:00">7:00</option>
+            <option value="8:00">8:00</option>
+            <option value="9:00">9:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+        </select>
+        <input type="number" id="numFuncionarios" placeholder="Funcionários necessários" min="1">
+        <button onclick="cadastrarAtividade()">Cadastrar Atividade</button>
+    </section>
+trecho antigo-->
+<!-- Modificar a seção de Cadastro de Atividades -->
+<section>
+    <h2>Cadastrar Atividade</h2>
+    <input type="text" id="nomeAtividade" placeholder="Nome da Atividade">
+    
+    <!-- Faixa de Horário -->
+    <label for="horaInicioAtividade">Hora de Início:</label>
+    <select id="horaInicioAtividade">
+        <option value="6:00">6:00</option>
+            <option value="7:00">7:00</option>
+            <option value="8:00">8:00</option>
+            <option value="9:00">9:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+    </select>
+
+    <label for="horaFimAtividade">Hora de Fim:</label>
+    <select id="horaFimAtividade">
+        <option value="6:00">6:00</option>
+            <option value="7:00">7:00</option>
+            <option value="8:00">8:00</option>
+            <option value="9:00">9:00</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+    </select>
+
+    <!-- Seleção de Salas -->
+    <label for="salasAtividade">Selecionar Salas:</label>
+    <select  id="salasAtividade"></select>
+    
+    <!-- Observação -->
+    <input type="text" id="observacaoAtividade" placeholder="Observações (ex: 15min de atividade)" />
+
+    <input type="number" id="numFuncionarios" placeholder="Funcionários necessários" min="1">
+    <button onclick="cadastrarAtividade()">Cadastrar Atividade</button>
+</section>
+
+
+    <!-- Grade de Horários -->
+    <section>
+        <h2>Grade de Atividades</h2>
+        <div id="gradeHorarios">
+            <!-- A grade será gerada dinamicamente pelo JavaScript -->
+        </div>
+    </section>
+
+    <!-- Botão para verificar atividades sem funcionários -->
+    <section>
+        <button onclick="verificarAtividades()">Verificar Atividades Sem Funcionários</button>
+        <p id="atividadesSemFuncionario"></p>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
