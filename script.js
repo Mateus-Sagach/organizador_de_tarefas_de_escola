@@ -2,7 +2,68 @@ let funcionarios = [];
 let atividades = [];
 let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];
 
-// Função para cadastrar funcionário
+
+// Função para atualizar apenas os dropdowns de funcionários em todas as células
+function atualizarDropdownFuncionarios() {
+    console.log("Iniciando a atualização dos dropdowns de funcionários...");
+    
+    atividades.forEach(atividade => {
+        const horaFormatada = String(atividade.horarioInicio).padStart(5, '0'); // Garante que o horário tenha formato HH:MM
+        const cellId = `${horaFormatada}-${atividade.sala}`.replace(/\s+/g, '');
+        const cell = document.getElementById(cellId);
+    
+        console.log(cell)
+        if (cell) {
+            console.log(`Atualizando dropdown na célula: ${atividade.horarioInicio}-${atividade.sala}`);
+            
+            const funcionariosTexto = atividade.funcionariosAlocados.map((func, index) => {
+                return `<div>${func} <button class="remover" data-func-index="${index}" data-horarioInicio="${atividade.horarioInicio}" data-sala="${atividade.sala}">Remover</button></div>`;
+            }).join('');
+
+            const funcionariosAlocados = atividade.funcionariosAlocados.length;
+            const funcionariosRestantes = atividade.funcionariosNecessarios - funcionariosAlocados;
+
+            // Log dos funcionários disponíveis para o dropdown
+            console.log(`Funcionários alocados: ${atividade.funcionariosAlocados}`);
+            console.log(`Funcionários restantes: ${funcionariosRestantes}`);
+
+            // Atualizar apenas o dropdown de funcionários, mantendo as outras informações
+            let dropdown = `<select class="funcionario-disponivel" data-horarioInicio="${atividade.horarioInicio}" data-sala="${atividade.sala}">
+                                <option value="">Selecione funcionário</option>`;
+            funcionarios.forEach(func => {
+                console.log(`Analisando funcionário: ${func.nome}, Ocupado: ${func.ocupado}`);
+                if (!atividade.funcionariosAlocados.includes(func.nome) && !func.ocupado) {
+                    dropdown += `<option value="${func.nome}">${func.nome}</option>`;
+                }
+            });
+            dropdown += `</select>`;
+
+            // Atualizar a célula com as novas opções no dropdown sem alterar as demais informações
+            cell.innerHTML = `
+                <strong>${atividade.atividade}</strong><br>
+                <em>(${atividade.horarioInicio} - ${atividade.horarioFim})</em><br>
+                Observação: ${atividade.observacao}<br>
+                Funcionários:<br> ${funcionariosTexto}<br>
+                Alocados: ${funcionariosAlocados}/${atividade.funcionariosNecessarios}<br>
+                Faltam: ${funcionariosRestantes}<br>
+                ${dropdown}`;
+
+            console.log(`Dropdown atualizado para a célula: ${atividade.horarioInicio}-${atividade.sala}`);
+
+            const removerButtons = cell.querySelectorAll('.remover');
+            removerButtons.forEach(button => {
+                button.addEventListener('click', removerFuncionario);
+            });
+
+            const select = cell.querySelector('.funcionario-disponivel');
+            select.addEventListener('change', alocarFuncionarioPorDropdown);
+        } else {
+            console.warn(`Célula não encontrada: ${atividade.horarioInicio}-${atividade.sala}`);
+        }
+    });
+}
+
+// Chamar a função de atualização dos dropdowns após cadastrar um novo funcionário
 function cadastrarFuncionario() {
     const nome = document.getElementById('nomeFuncionario').value.trim();
     const erroDiv = document.getElementById('mensagemErroFuncionario');
@@ -10,18 +71,25 @@ function cadastrarFuncionario() {
     // Verificar se o nome já existe
     if (funcionarios.some(func => func.nome === nome)) {
         erroDiv.textContent = 'Funcionário já cadastrado com este nome.';
+        console.warn(`Tentativa de cadastrar funcionário já existente: ${nome}`);
         return;
     }
 
     if (nome) {
         funcionarios.push({ nome, ocupado: false });
+        console.log(`Funcionário cadastrado: ${nome}`);
+        
         document.getElementById('nomeFuncionario').value = '';
         erroDiv.textContent = '';
         atualizarListaFuncionarios();
+        atualizarDropdownFuncionarios(); // Atualiza os dropdowns ao cadastrar um novo funcionário
     } else {
         erroDiv.textContent = 'Nome do funcionário não pode ser vazio.';
+        console.warn('Tentativa de cadastro de funcionário com nome vazio.');
     }
 }
+
+
 
 // Atualizar lista de funcionários na tela
 function atualizarListaFuncionarios() {
@@ -38,7 +106,6 @@ function atualizarListaFuncionarios() {
     });
 }
 
-
 function gerarGrade() {
     const horarios = Array.from({ length: 12 }, (_, i) => `${String(i + 6).padStart(2, '0')}:00`); // Horários formatados como 06:00, 07:00, etc.
     const gradeHorarios = document.getElementById('gradeHorarios');
@@ -51,7 +118,7 @@ function gerarGrade() {
     gradeHorarios.appendChild(blankHeader);
 
     // Nomes das salas, inicializando com valores padrão
-    /*let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];*/
+    let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];
 
     // Cabeçalhos com os nomes das salas e editáveis
     salas.forEach((sala, index) => {
@@ -80,7 +147,8 @@ function gerarGrade() {
 
         salas.forEach((sala, index) => {
             const div = document.createElement('div');
-            div.id = `${hora}-${sala}`;  // ID correto com espaço entre "Sala" e o número
+            const idGerado = `${hora}-${sala}`.replace(/\s+/g, ''); // Remove espaços extras do ID
+            div.id = idGerado;  // ID correto com espaço entre "Sala" e o número
             console.log(`Gerando célula com ID: ${div.id}`); // Verificação via console
             div.innerHTML = `<strong>${hora}</strong>`;
             div.addEventListener('dragover', handleDragOver);
@@ -89,7 +157,6 @@ function gerarGrade() {
         });
     });
 }
-
 
 
 // Função para preencher o select de salas no cadastro de atividades
@@ -107,14 +174,22 @@ function preencherOpcoesSalas() {
     });
 }
 
+
 // Alteração na função de cadastrar atividade
 function cadastrarAtividade() {
     const nomeAtividade = document.getElementById('nomeAtividade').value.trim();
-    const horaInicio = document.getElementById('horaInicioAtividade').value;
+    const horaInicio=String(document.getElementById('horaInicioAtividade').value).padStart(5, '0');
     const horaFim = document.getElementById('horaFimAtividade').value;
     const salasSelecionadas = Array.from(document.getElementById('salasAtividade').selectedOptions).map(option => option.value);
     const observacao = document.getElementById('observacaoAtividade').value.trim();
     const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value);
+    //teste para corrigir nomes abaixo
+
+    salasSelecionadas.forEach(sala => {
+        sala = sala.replace(/\s+/g, '');
+        console.log(`sala apos o replace:${sala}`);
+        });
+    //fim do teste
 
     console.log(`Tentando cadastrar atividade: ${nomeAtividade}, Início: ${horaInicio}, Fim: ${horaFim}, Sala: ${salasSelecionadas}`); // Verificação via console
 
@@ -139,11 +214,11 @@ function cadastrarAtividade() {
 
         // Atualizar a grade para exibir as novas atividades
         atualizarGradeComAtividades();
+    
     } else {
         alert('Por favor, preencha todos os campos corretamente.');
     }
 }
-
 
 
 // Alteração na função de atualizar a grade de atividades
@@ -152,7 +227,7 @@ function atualizarGradeComAtividades() {
 
     atividades.forEach(atividade => {
         const horaFormatada = String(atividade.horarioInicio).padStart(5, '0'); // Garante que o horário tenha formato HH:MM
-        const cellId = `${horaFormatada}-${atividade.sala}`;
+        const cellId = `${horaFormatada}-${atividade.sala}`.replace(/\s+/g, '');
         console.log(cellId)
         const cell = document.getElementById(cellId);
         
@@ -190,10 +265,9 @@ function atualizarGradeComAtividades() {
             console.error(`Erro: célula não encontrada para ${atividade.atividade} com ID ${cellId}`);
         }
     });
+
+    atualizarDropdownFuncionarios()
 }
-
-
-
 
 
 // Função para preencher o select de salas com os nomes das salas do grid
@@ -214,11 +288,15 @@ function atualizarSelecaoSalas() {
 
 // Função para remover um funcionário
 function removerFuncionario(event) {
+    console.log(`iniciando função remover funcionário...`)
     const funcIndex = event.target.getAttribute('data-func-index');
-    const horario = event.target.getAttribute('data-horario');
-    const dia = event.target.getAttribute('data-dia');
+    const horario = event.target.getAttribute('data-horarioinicio');
+    const sala = event.target.getAttribute('data-sala');
+    console.log(atividades)
+    const atividade = atividades.find(a => a.horarioInicio === horario && a.sala === sala);
+    
 
-    const atividade = atividades.find(a => a.horario === horario && a.dia === dia);
+
     if (atividade) {
         const funcionarioRemovido = atividade.funcionariosAlocados.splice(funcIndex, 1)[0];
         const funcionario = funcionarios.find(f => f.nome === funcionarioRemovido);
@@ -227,10 +305,13 @@ function removerFuncionario(event) {
         }
         atualizarGradeComAtividades();
     }
+    else{
+        console.error(`não foi encontrada a atividade com horario : ${horario} e sala ${sala}`);
+    }
 }
 
-// Função para alocar funcionário pelo dropdown
-function alocarFuncionarioPorDropdown(event) {
+// Função para alocar funcionário pelo dropdown antiga
+/*function alocarFuncionarioPorDropdown(event) {
     const funcionarioNome = event.target.value;
     const horario = event.target.getAttribute('data-horario');
     const dia = event.target.getAttribute('data-dia');
@@ -252,6 +333,62 @@ function alocarFuncionarioPorDropdown(event) {
         } else {
             alert('Essa atividade já tem o número máximo de funcionários alocados.');
         }
+    }
+}*/
+
+
+// Função para alocar funcionário pelo dropdown
+function alocarFuncionarioPorDropdown(event) {
+    console.log(`função alocar funcionario por dropdown iniciando...`)
+    const funcionarioNome = event.target.value;
+    const horarioInicio = event.target.getAttribute('data-horarioInicio');
+    const sala = event.target.getAttribute('data-sala');
+
+    console.log(`Tentando alocar funcionário: ${funcionarioNome}, para a sala: ${sala}, no horário: ${horarioInicio}`);
+
+    if (funcionarioNome) {
+        // Encontrar a atividade correspondente
+        const atividade = atividades.find(a => a.horarioInicio === horarioInicio && a.sala === sala);
+
+        // Verificar se a atividade foi encontrada
+        if (atividade) {
+            console.log(`Atividade encontrada: ${atividade.atividade}`);
+            
+            // Log do número de funcionários alocados e necessários
+            console.log(`Funcionários alocados: ${atividade.funcionariosAlocados.length}`);
+            console.log(`Funcionários necessários: ${atividade.funcionariosNecessarios}`);
+
+            // Verificar se há espaço para mais funcionários
+            if (atividade.funcionariosAlocados.length < atividade.funcionariosNecessarios) {
+                // Verificar se o funcionário já foi alocado
+                if (!atividade.funcionariosAlocados.includes(funcionarioNome)) {
+                    // Alocar o funcionário
+                    atividade.funcionariosAlocados.push(funcionarioNome);
+                    console.log(`Funcionário ${funcionarioNome} alocado com sucesso!`);
+                    
+                    // Marcar o funcionário como ocupado
+                    const funcionario = funcionarios.find(f => f.nome === funcionarioNome);
+                    if (funcionario) {
+                        funcionario.ocupado = true;
+                    }
+
+                    // Limpar a seleção
+                    event.target.value = '';
+                    atualizarGradeComAtividades(); // Atualiza a célula da atividade
+            
+                } else {
+                    alert('Esse funcionário já está alocado nesta atividade.');
+                    console.warn(`Funcionário ${funcionarioNome} já está alocado nesta atividade.`);
+                }
+            } else {
+                alert('Essa atividade já tem o número máximo de funcionários alocados.');
+                console.warn(`Atividade já tem o número máximo de funcionários alocados.`);
+            }
+        } else {
+            console.error(`Erro: atividade não encontrada para o horário: ${horarioInicio}, sala: ${sala}`);
+        }
+    } else {
+        console.warn('Nenhum funcionário foi selecionado.');
     }
 }
 
