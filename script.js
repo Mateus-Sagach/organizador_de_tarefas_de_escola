@@ -1,5 +1,6 @@
 let funcionarios = [];
 let atividades = [];
+let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];
 
 // Função para cadastrar funcionário
 function cadastrarFuncionario() {
@@ -50,7 +51,7 @@ function gerarGrade() {
     gradeHorarios.appendChild(blankHeader);
 
     // Nomes das salas, inicializando com valores padrão
-    let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];
+    /*let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];*/
 
     // Cabeçalhos com os nomes das salas e editáveis
     salas.forEach((sala, index) => {
