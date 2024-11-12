@@ -176,20 +176,20 @@ function preencherOpcoesSalas() {
 
 
 // Alteração na função de cadastrar atividade
-function cadastrarAtividade() {
+/*function cadastrarAtividade() {
     const nomeAtividade = document.getElementById('nomeAtividade').value.trim();
     const horaInicio=String(document.getElementById('horaInicioAtividade').value).padStart(5, '0');
     const horaFim = document.getElementById('horaFimAtividade').value;
     const salasSelecionadas = Array.from(document.getElementById('salasAtividade').selectedOptions).map(option => option.value);
     const observacao = document.getElementById('observacaoAtividade').value.trim();
     const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value);
-    //teste para corrigir nomes abaixo
+
 
     salasSelecionadas.forEach(sala => {
         sala = sala.replace(/\s+/g, '');
         console.log(`sala apos o replace:${sala}`);
         });
-    //fim do teste
+    
 
     console.log(`Tentando cadastrar atividade: ${nomeAtividade}, Início: ${horaInicio}, Fim: ${horaFim}, Sala: ${salasSelecionadas}`); // Verificação via console
 
@@ -217,6 +217,70 @@ function cadastrarAtividade() {
     
     } else {
         alert('Por favor, preencha todos os campos corretamente.');
+    }
+}*/
+function cadastrarAtividade() {
+    const nomeAtividade = document.getElementById('nomeAtividade').value.trim();
+    const horaInicio = document.getElementById('horaInicioAtividade').value;
+    const horaFim = document.getElementById('horaFimAtividade').value;
+    const salasSelecionadas = Array.from(document.getElementById('salasAtividade').selectedOptions).map(option => option.value);
+    const observacao = document.getElementById('observacaoAtividade').value.trim();
+    const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value);
+
+    console.log(`Tentando cadastrar atividade: ${nomeAtividade}, Início: ${horaInicio}, Fim: ${horaFim}, Sala: ${salasSelecionadas}`);
+
+    if (nomeAtividade && horaInicio && horaFim && salasSelecionadas.length > 0 && numFuncionarios > 0) {
+        salasSelecionadas.forEach(sala => {
+            // Verificar se já existe uma atividade no mesmo horário e sala
+            const atividadeExistente = atividades.find(a => a.horarioInicio === horaInicio && a.sala === sala);
+
+            if (atividadeExistente) {
+                console.log(`Sobrescrevendo atividade existente: ${atividadeExistente.atividade} na sala ${sala} às ${horaInicio}`);
+                
+                // Liberar os funcionários alocados da atividade existente
+                liberarFuncionarios(atividadeExistente);
+
+                // Remover a atividade anterior da lista
+                atividades = atividades.filter(a => !(a.horarioInicio === horaInicio && a.sala === sala));
+            }
+
+            // Adicionar a nova atividade
+            atividades.push({
+                horarioInicio: horaInicio,
+                horarioFim: horaFim,
+                sala: sala,
+                atividade: nomeAtividade,
+                observacao: observacao,
+                funcionariosNecessarios: numFuncionarios,
+                funcionariosAlocados: [] // Começa sem funcionários alocados
+            });
+
+            console.log(`Atividade cadastrada com sucesso: ${nomeAtividade} na sala ${sala} das ${horaInicio} às ${horaFim}`);
+        });
+
+        // Limpar campos de cadastro
+        document.getElementById('nomeAtividade').value = '';
+        document.getElementById('observacaoAtividade').value = '';
+        document.getElementById('numFuncionarios').value = '';
+
+        // Atualizar a grade para refletir as mudanças
+        atualizarGradeComAtividades();
+    } else {
+        alert('Por favor, preencha todos os campos corretamente.');
+    }
+}
+
+// Função para liberar os funcionários de uma atividade removida
+function liberarFuncionarios(atividade) {
+    if (atividade && atividade.funcionariosAlocados.length > 0) {
+        atividade.funcionariosAlocados.forEach(funcionarioNome => {
+            const funcionario = funcionarios.find(f => f.nome === funcionarioNome);
+            if (funcionario) {
+                funcionario.ocupado = false; // Libera o funcionário
+                console.log(`Funcionário ${funcionarioNome} liberado da atividade ${atividade.atividade}`);
+            }
+        });
+        atividade.funcionariosAlocados = []; // Remove todos os funcionários alocados da atividade
     }
 }
 
@@ -309,33 +373,6 @@ function removerFuncionario(event) {
         console.error(`não foi encontrada a atividade com horario : ${horario} e sala ${sala}`);
     }
 }
-
-// Função para alocar funcionário pelo dropdown antiga
-/*function alocarFuncionarioPorDropdown(event) {
-    const funcionarioNome = event.target.value;
-    const horario = event.target.getAttribute('data-horario');
-    const dia = event.target.getAttribute('data-dia');
-
-    if (funcionarioNome) {
-        const atividade = atividades.find(a => a.horario === horario && a.dia === dia);
-        if (atividade && atividade.funcionariosAlocados.length < atividade.funcionariosNecessarios) {
-            if (!atividade.funcionariosAlocados.includes(funcionarioNome)) {
-                atividade.funcionariosAlocados.push(funcionarioNome);
-                const funcionario = funcionarios.find(f => f.nome === funcionarioNome);
-                if (funcionario) {
-                    funcionario.ocupado = true;
-                }
-                event.target.value = ''; // Limpar a seleção
-                atualizarGradeComAtividades();
-            } else {
-                alert('Esse funcionário já está alocado nesta atividade.');
-            }
-        } else {
-            alert('Essa atividade já tem o número máximo de funcionários alocados.');
-        }
-    }
-}*/
-
 
 // Função para alocar funcionário pelo dropdown
 function alocarFuncionarioPorDropdown(event) {
@@ -431,16 +468,23 @@ function handleDrop(event) {
 }
 
 // Função para verificar atividades sem funcionários
+
 function verificarAtividades() {
     const atividadesSemFuncionario = atividades.filter(atividade => atividade.funcionariosAlocados.length === 0);
-    const resultado = atividadesSemFuncionario.map(atividade => `${atividade.atividade} (${atividade.horario} - ${atividade.dia})`).join(', ');
-    
+
+    // Formatando cada atividade para exibir em uma nova linha
+    const resultado = atividadesSemFuncionario.map(atividade => 
+        `${atividade.atividade} (${atividade.horarioInicio} - ${atividade.sala})`
+    ).join('<br>');
+
     const mensagem = atividadesSemFuncionario.length > 0
-        ? `Atividades sem funcionários: ${resultado}`
+        ? `Atividades sem funcionários:<br>${resultado}` // Incluímos a quebra de linha aqui
         : 'Todas as atividades têm funcionários alocados.';
     
-    document.getElementById('atividadesSemFuncionario').textContent = mensagem;
+    // Usando innerHTML para preservar as quebras de linha
+    document.getElementById('atividadesSemFuncionario').innerHTML = mensagem;
 }
+
 
 // Inicializar grade de horários na tela
 window.onload = () => {
