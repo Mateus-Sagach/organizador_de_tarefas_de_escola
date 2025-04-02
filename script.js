@@ -176,49 +176,6 @@ function preencherOpcoesSalas() {
 
 
 // Alteração na função de cadastrar atividade
-/*function cadastrarAtividade() {
-    const nomeAtividade = document.getElementById('nomeAtividade').value.trim();
-    const horaInicio=String(document.getElementById('horaInicioAtividade').value).padStart(5, '0');
-    const horaFim = document.getElementById('horaFimAtividade').value;
-    const salasSelecionadas = Array.from(document.getElementById('salasAtividade').selectedOptions).map(option => option.value);
-    const observacao = document.getElementById('observacaoAtividade').value.trim();
-    const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value);
-
-
-    salasSelecionadas.forEach(sala => {
-        sala = sala.replace(/\s+/g, '');
-        console.log(`sala apos o replace:${sala}`);
-        });
-    
-
-    console.log(`Tentando cadastrar atividade: ${nomeAtividade}, Início: ${horaInicio}, Fim: ${horaFim}, Sala: ${salasSelecionadas}`); // Verificação via console
-
-    if (nomeAtividade && horaInicio && horaFim && salasSelecionadas.length > 0 && numFuncionarios > 0) {
-        salasSelecionadas.forEach(sala => {
-            atividades.push({
-                horarioInicio: horaInicio,
-                horarioFim: horaFim,
-                sala: sala,
-                atividade: nomeAtividade,
-                observacao: observacao,
-                funcionariosNecessarios: numFuncionarios,
-                funcionariosAlocados: [] // Certifique-se de que essa lista está vazia inicialmente
-            });
-            console.log(`Atividade cadastrada com sucesso: ${nomeAtividade} na sala ${sala} das ${horaInicio} às ${horaFim}`); // Verificação via console
-        });
-
-        // Limpar campos de cadastro após inserir
-        document.getElementById('nomeAtividade').value = '';
-        document.getElementById('observacaoAtividade').value = '';
-        document.getElementById('numFuncionarios').value = '';
-
-        // Atualizar a grade para exibir as novas atividades
-        atualizarGradeComAtividades();
-    
-    } else {
-        alert('Por favor, preencha todos os campos corretamente.');
-    }
-}*/
 function cadastrarAtividade() {
     const nomeAtividade = document.getElementById('nomeAtividade').value.trim();
     const horaInicio = document.getElementById('horaInicioAtividade').value;
