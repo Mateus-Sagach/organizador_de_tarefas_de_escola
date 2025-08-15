@@ -1,4 +1,4 @@
-# organizador de tarefas de escola
+# Organizador de tarefas de escola
 
  Este repositorio é um WIP(Work in Progress) que tem como objetivo criar um site que servirá como um organizador das tarefas dos funcionários de escolas.Assim funcionando como um cronograma das atividades diárias da escola.
   
