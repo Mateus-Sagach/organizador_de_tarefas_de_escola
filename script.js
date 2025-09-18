@@ -183,10 +183,30 @@ function cadastrarAtividade() {
     const salasSelecionadas = Array.from(document.getElementById('salasAtividade').selectedOptions).map(option => option.value);
     const observacao = document.getElementById('observacaoAtividade').value.trim();
     const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value);
+    let horaInicioPrimeiroNum;
+    let horaFimPrimeiroNum;
 
-    console.log(`Tentando cadastrar atividade: ${nomeAtividade}, Início: ${horaInicio}, Fim: ${horaFim}, Sala: ${salasSelecionadas}`);
+    //trecho para obter valor numerio correto da string hora inicial para comparação
+    if(horaInicio.length>4){
+        horaInicioPrimeiroNum = Number(horaInicio.slice(0, 2));
+    }else{
+        horaInicioPrimeiroNum = Number(horaInicio.slice(0, 1));
+    }
 
-    if (nomeAtividade && horaInicio && horaFim && salasSelecionadas.length > 0 && numFuncionarios > 0) {
+    console.log(`HoraInicial em numero ${horaInicioPrimeiroNum}`);
+
+    //trecho para obter valor numerio correto da string hora final para comparação
+
+    if(horaFim.length>4){
+        horaFimPrimeiroNum = Number(horaFim.slice(0, 2));
+    }else{
+        horaFimPrimeiroNum = Number(horaFim.slice(0, 1));
+    }
+    
+
+    console.log(`Tentando cadastrar atividade: ${nomeAtividade}, Início: ${horaInicio}, Fim: ${horaFim}, Sala: ${salasSelecionadas}, horainicial em numero ${horaInicioPrimeiroNum}`);
+
+    if (nomeAtividade && horaInicio && horaFim && salasSelecionadas.length > 0 && numFuncionarios > 0 && horaInicioPrimeiroNum<horaFimPrimeiroNum) {
         salasSelecionadas.forEach(sala => {
             // Verificar se já existe uma atividade no mesmo horário e sala
             const atividadeExistente = atividades.find(a => a.horarioInicio === horaInicio && a.sala === sala);
