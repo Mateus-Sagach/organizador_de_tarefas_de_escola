@@ -449,17 +449,45 @@ function handleDrop(event) {
 function verificarAtividades() {
     const atividadesSemFuncionario = atividades.filter(atividade => atividade.funcionariosAlocados.length === 0);
 
+    const atividadesComPoucoFuncionario = atividades.filter(atividade => atividade.funcionariosAlocados.length < atividade.funcionariosNecessarios && atividade.funcionariosAlocados.length > 0);
+
     // Formatando cada atividade para exibir em uma nova linha
-    const resultado = atividadesSemFuncionario.map(atividade => 
+    const resultadoSemFuncionario = atividadesSemFuncionario.map(atividade => 
         `${atividade.atividade} (${atividade.horarioInicio} - ${atividade.sala})`
     ).join('<br>');
+    const resultadoPoucoFuncionario = atividadesComPoucoFuncionario.map(atividade => 
+        `${atividade.atividade} (${atividade.horarioInicio} - ${atividade.sala}) - Faltam ${atividade.funcionariosNecessarios - atividade.funcionariosAlocados.length} funcionários`
+    ).join('<br>');
+    let mensagemSemFunc ;
+    let mensagemPoucoFunc ;
+    if (atividadesSemFuncionario.length > 0) {
+        document.getElementById('statusAtividadesSemFunc').classList.add("cor-erro");
+        mensagemSemFunc = `Atividades sem funcionários:<br>${resultadoSemFuncionario}`;
+        document.getElementById('statusAtividadesSemFunc').innerHTML = mensagemSemFunc;
+    }
+    else{
+        document.getElementById('statusAtividadesSemFunc').innerHTML = '';
+    }
+    if(atividadesComPoucoFuncionario.length>0){
+        mensagemPoucoFunc = `Atividades com pouco funcionários:<br>${resultadoPoucoFuncionario}`;
+        document.getElementById('statusAtividadesPoucoFunc').classList.add("cor-aviso");
+        document.getElementById('statusAtividadesPoucoFunc').innerHTML = mensagemPoucoFunc;
+    }
+    else{
+        document.getElementById('statusAtividadesPoucoFunc').innerHTML = '';
+    }
+    if(atividadesSemFuncionario.length === 0 && atividadesComPoucoFuncionario.length === 0){
+        document.getElementById('statusAtividadesPreenchidas').classList.add("cor-sucesso");
+        mensagemSemFunc = 'Todas as atividades têm funcionários alocados.<br>';
+        document.getElementById('statusAtividadesPreenchidas').innerHTML = mensagemSemFunc;
+    }
+    else{
+         document.getElementById('statusAtividadesPreenchidas').innerHTML = '';
+    }
 
-    const mensagem = atividadesSemFuncionario.length > 0
-        ? `Atividades sem funcionários:<br>${resultado}` // Incluímos a quebra de linha aqui
-        : 'Todas as atividades têm funcionários alocados.';
+
     
-    // Usando innerHTML para preservar as quebras de linha
-    document.getElementById('atividadesSemFuncionario').innerHTML = mensagem;
+
 }
 
 

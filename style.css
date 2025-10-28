@@ -87,10 +87,26 @@ button {
     opacity: 0.5;
 }
 
-#atividadesSemFuncionario {
+#statusAtividades {
     margin-top: 20px;
     font-weight: bold;
-    color: red;
+    
+}
+
+.texto-grande{
+    font-size: 1.5em;
+}
+
+.cor-sucesso {
+  color: green;
+}
+
+.cor-erro {
+  color: red;
+}
+
+.cor-aviso {
+  color: orange;
 }
 
 button.remover {
