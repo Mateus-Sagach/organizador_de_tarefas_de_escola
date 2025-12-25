@@ -27,7 +27,7 @@ function atualizarDropdownFuncionarios() {
             console.log(`Funcionários alocados: ${atividade.funcionariosAlocados}`);
             console.log(`Funcionários restantes: ${funcionariosRestantes}`);
 
-            // Atualizar apenas o dropdown de funcionários, mantendo as outras informações
+            // Atualiza apenas o dropdown de funcionários, mantendo as outras informações
             let dropdown = `<select class="funcionario-disponivel" data-horarioInicio="${atividade.horarioInicio}" data-sala="${atividade.sala}">
                                 <option value="">Selecione funcionário</option>`;
             funcionarios.forEach(func => {
@@ -100,8 +100,6 @@ function atualizarListaFuncionarios() {
         item.textContent = func.nome;
         item.setAttribute('draggable', true);
         item.setAttribute('data-index', index);
-        item.addEventListener('dragstart', handleDragStart);
-        item.addEventListener('dragend', handleDragEnd);
         lista.appendChild(item);
     });
 }
@@ -151,8 +149,6 @@ function gerarGrade() {
             div.id = idGerado;  // ID correto com espaço entre "Sala" e o número
             console.log(`Gerando célula com ID: ${div.id}`); // Verificação via console
             div.innerHTML = `<strong>${hora}</strong>`;
-            div.addEventListener('dragover', handleDragOver);
-            div.addEventListener('drop', handleDrop);
             gradeHorarios.appendChild(div);
         });
     });
@@ -406,46 +402,7 @@ function alocarFuncionarioPorDropdown(event) {
     }
 }
 
-// Funções de Drag and Drop
-let draggedFuncionario = null;
-
-function handleDragStart(event) {
-    draggedFuncionario = funcionarios[event.target.getAttribute('data-index')];
-    event.target.classList.add('dragging');
-}
-
-function handleDragEnd(event) {
-    event.target.classList.remove('dragging');
-}
-
-function handleDragOver(event) {
-    event.preventDefault();
-}
-
-function handleDrop(event) {
-    event.preventDefault();
-    const cellId = event.target.id;
-    const [hora, dia] = cellId.split('-');
-
-    // Verifica se existe uma atividade no horário
-    const atividade = atividades.find(a => a.horario === hora && a.dia === dia);
-
-    // Verifica se o funcionário já está alocado nessa atividade
-    if (atividade && !atividade.funcionariosAlocados.includes(draggedFuncionario.nome)) {
-        if (atividade.funcionariosAlocados.length < atividade.funcionariosNecessarios) {
-            atividade.funcionariosAlocados.push(draggedFuncionario.nome);
-            draggedFuncionario.ocupado = true;
-            atualizarGradeComAtividades();
-        } else {
-            alert('Essa atividade já tem o número máximo de funcionários alocados.');
-        }
-    } else if (atividade) {
-        alert('Esse funcionário já está alocado nesta atividade.');
-    }
-}
-
 // Função para verificar atividades sem funcionários
-
 function verificarAtividades() {
     const atividadesSemFuncionario = atividades.filter(atividade => atividade.funcionariosAlocados.length === 0);
 
