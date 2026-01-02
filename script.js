@@ -2,147 +2,134 @@ let funcionarios = [];
 let atividades = [];
 let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];
 let contagemCiclos = 0;
-//Criando banco de dados pelo IndexedDB 
-const request = indexedDB.open("organizadorEscola", 1);
 
-request.onupgradeneeded = function (event) {
-    const db = event.target.result;
-    console.log("Atualizando ou criando banco de dados...");
-  // TABELA DE FUNCIONARIOS
-    if (!db.objectStoreNames.contains("funcionarios")) {
-        db.createObjectStore("funcionarios", {
-        keyPath: "id",
-        autoIncrement: true
-        });
-        console.log("Criando object store 'funcionarios' e o id");
-    } else {
-            store = event.target.transaction.objectStore('funcionarios');
-                console.log("object store 'funcionarios' e o id já criados");
+let dbCarregado = null;
 
-    }
-    store = event.target.transaction.objectStore('funcionarios');
+function abrirBanco() {
+    return new Promise((resolve, reject) => {
 
-  // para garantir que o index 'nome' exista e nao tenha nomes repitidos
-    if (!store.indexNames.contains('nome')) {
-        store.createIndex('nome', 'nome', { unique: true });
-        console.log("Criando index 'nome' na object store 'funcionarios'");
-  }
-  // TABELA DE TAREFAS
-    if (!db.objectStoreNames.contains("tarefas")) {
-        db.createObjectStore("tarefas", {
-        keyPath: "id",
-        autoIncrement: true
-        });
-        console.log("Criando object store 'tarefas' e o id");
-    } else {
-        store = event.target.transaction.objectStore('tarefas');
-}
-}
-
-request.onsuccess = function () {
-  console.log("Banco pronto para uso");
-}
-
-function limparHorariosOcupadosFuncionariosIndexedDb() {
-    const request = indexedDB.open('organizadorEscola', 1);
-    request.onsuccess = function (event) {
-        const db = event.target.result;
-        const tx = db.transaction(['funcionarios'], 'readwrite');
-        const store = tx.objectStore('funcionarios');
-        const getAllRequest = store.getAll();
-
-        getAllRequest.onsuccess = function () {
-            const funcionariosData = getAllRequest.result;
-            funcionariosData.forEach(funcionarioData => {
-                funcionarioData.horariosOcupados = []; // Limpa os horários ocupados
-                const updateRequest = store.put(funcionarioData);
-                updateRequest.onsuccess = function () {
-                    console.log(`Horários ocupados limpos para o funcionário ${funcionarioData.id}.`);
-                };
-            });
-        };
-    };
-}
-
-function obterNomeFuncionario(idFuncionario) {
-    const request = indexedDB.open('organizadorEscola', 1);
-    request.onsuccess = function (event) {
-        const db = event.target.result;
-        var transaction = db.transaction(["funcionarios"]);
-        var objectStore = transaction.objectStore("funcionarios");
-        var request = objectStore.get(idFuncionario);
-        request.onsuccess = function (event) {
-            console.log("O nome do funcionario de id " + idFuncionario + " é " + request.result.nome);
-            return request.result.nome;
+        // Se já estiver aberto, reutiliza
+        if (dbCarregado) {
+            resolve(dbCarregado);
+            return;
         }
-        request.onerror = function (event) {
-        // Trata erro!
-            console.log("Não foi possível obter o nome do funcionário com id " + idFuncionario);
+
+        const request = indexedDB.open('organizadorEscola', 1);
+
+        request.onerror = () => reject("Erro ao abrir o banco");
+
+        request.onupgradeneeded = function (event) {
+            const db = event.target.result;
+
+            if (!db.objectStoreNames.contains('funcionarios')) {
+                const store = db.createObjectStore('funcionarios', {
+                    keyPath: 'id',
+                    autoIncrement: true
+                });
+
+                store.createIndex('nome', 'nome', { unique: true });
+            }
+
+            if (!db.objectStoreNames.contains('atividades')) {
+                db.createObjectStore('atividades', {
+                keyPath: 'id',
+                autoIncrement: true
+                });
+                console.log('Criando object store atividades e o id');
+            } else {
+                store = event.target.transaction.objectStore('atividades');
+        }
         };
-    };
+
+        request.onsuccess = function (event) {
+            dbCarregado = event.target.result;
+            resolve(dbCarregado);
+        };
+    });
+}
+//função para obter a object store desejada com o modo desejado
+async function obterStore(nomeStore, modo = 'readonly') {
+    const db = await abrirBanco();
+    const tx = db.transaction([nomeStore], modo);
+    return tx.objectStore(nomeStore);
 }
 
-function obterIDFuncionario(nomeFuncionario) {
+//função chamada para limpar todos os horarios ocupados de todos os funcionários no indexedDB
+async function limparHorariosOcupadosFuncionariosIndexedDb() {
+    const store = await obterStore('funcionarios', 'readwrite');
+    const getAllRequest = store.getAll();
+
+    getAllRequest.onsuccess = function () {
+        const funcionariosData = getAllRequest.result;
+        funcionariosData.forEach(funcionarioData => {
+            funcionarioData.horariosOcupados = []; // Limpa os horários ocupados
+            const updateRequest = store.put(funcionarioData);
+            updateRequest.onsuccess = function () {
+                console.log(`Horários ocupados limpos para o funcionário ${funcionarioData.id}.`);
+            };
+        });
+    };
+    }
+
+async function obterNomeFuncionario(idFuncionario) {
+    var objectStore = await obterStore('funcionarios', 'readwrite');
+    var request = objectStore.get(idFuncionario);
+    request.onsuccess = function (event) {
+        console.log('O nome do funcionario de id ' + idFuncionario + ' é ' + request.result.nome);
+        return request.result.nome;
+    }
+    request.onerror = function (event) {
+    // Trata erro!
+        console.log('Não foi possível obter o nome do funcionário com id ' + idFuncionario);
+    };
+    }
+
+async function obterIDFuncionario(nomeFuncionario) {
+    var objectStore = await obterStore('funcionarios', 'readwrite');
     return new  Promise((resolve, reject) => {
-        const request = indexedDB.open('organizadorEscola', 1);
-        request.onsuccess = function (event) {
-            const db = event.target.result;
-            var transaction = db.transaction(["funcionarios"]);
-            var objectStore = transaction.objectStore("funcionarios");
-            
             objectStore.openCursor().onsuccess = function (event) {
                 var cursor = event.target.result;
                 if (cursor) {
                     if(cursor.value.nome === nomeFuncionario){
-                        console.log("O id do funcionário de nome " + nomeFuncionario + " é " + cursor.value.id);
+                        console.log('O id do funcionário de nome ' + nomeFuncionario + ' é ' + cursor.value.id);
                         resolve(cursor.value.id);
                         return;
                     }
         
                     cursor.continue();
                 } else {
-                    console.log("Não existe mais registros!");
+                    console.log('Não existe mais registros!');
                     resolve(null); // Retorna null se não encontrar o nome passado no parametro
                     
                 }
             };
 
-        };
-});
+        });
 }
 
-function adicionarHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
-    const request = indexedDB.open('organizadorEscola', 1);
-    request.onsuccess = function (event) {
-        const db = event.target.result;
-        const tx = db.transaction(['funcionarios'], 'readwrite');
-        const store = tx.objectStore('funcionarios');
 
-        const getRequest = store.get(idFuncionario);
-        getRequest.onsuccess = function (event) {
-            const funcionarioData = getRequest.result;
-            if (!funcionarioData.horariosOcupados) {
-                funcionarioData.horariosOcupados = [];
-            }
-            funcionarioData.horariosOcupados.push(horario);
-            const updateRequest = store.put(funcionarioData);
-            updateRequest.onsuccess = function () {
-                console.log(`Horário ${horario} adicionado ao funcionário ${idFuncionario} no IndexedDB.`);
-            };
-            updateRequest.onerror = function (e) {
-                console.log("Erro ao atualizar funcionário:", e.target.error);
-            };
+async function adicionarHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
+    const store = await obterStore('funcionarios', 'readwrite');
+    const getRequest = store.get(idFuncionario);
+    getRequest.onsuccess = function (event) {
+        const funcionarioData = getRequest.result;
+        if (!funcionarioData.horariosOcupados) {
+            funcionarioData.horariosOcupados = [];
+        }
+        funcionarioData.horariosOcupados.push(horario);
+        const updateRequest = store.put(funcionarioData);
+        updateRequest.onsuccess = function () {
+            console.log(`Horário ${horario} adicionado ao funcionário ${idFuncionario} no IndexedDB.`);
+        };
+        updateRequest.onerror = function (e) {
+            console.log('Erro ao atualizar funcionário:', e.target.error);
         };
     };
+
 }
 
-function removerHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
-    const request = indexedDB.open('organizadorEscola', 1);
-    request.onsuccess = function (event) {
-        const db = event.target.result;
-        const tx = db.transaction(['funcionarios'], 'readwrite');
-        const store = tx.objectStore('funcionarios');
-
+async function removerHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
+        const store = await obterStore('funcionarios', 'readwrite');
         const getRequest = store.get(idFuncionario);
         getRequest.onsuccess = function (event) {
             const funcionarioData = getRequest.result;
@@ -154,120 +141,93 @@ function removerHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
                 console.log(`Horário ${horario} removido do funcionário ${idFuncionario} no IndexedDB.`);
             };
             updateRequest.onerror = function (e) {
-                console.log("Erro ao atualizar funcionário:", e.target.error);
+                console.log('Erro ao atualizar funcionário:', e.target.error);
             };
         };
-    };
 }
 
 
-function alterarOcupadoFuncionarioIndexDB(idFuncionario, ocupadoStatus) {
-    const request = indexedDB.open('organizadorEscola', 1);
-    request.onsuccess = function (event) {
-        const db = event.target.result;
-        const tx = db.transaction(['funcionarios'], 'readwrite');
-        const store = tx.objectStore('funcionarios');
+async function alterarOcupadoFuncionarioIndexDB(idFuncionario, ocupadoStatus) {
+    const store = await obterStore('funcionarios', 'readwrite');
+    const getRequest = store.get(idFuncionario);
+    getRequest.onsuccess = function (event) {
+        const funcionarioData = getRequest.result;
+        funcionarioData.ocupado = ocupadoStatus;
+        const updateRequest = store.put(funcionarioData);
 
-        const getRequest = store.get(idFuncionario);
-        getRequest.onsuccess = function (event) {
-            const funcionarioData = getRequest.result;
-            funcionarioData.ocupado = ocupadoStatus;
-            const updateRequest = store.put(funcionarioData);
-
-            updateRequest.onsuccess = function () {
-                console.log(`Funcionário ${idFuncionario} atualizado com sucesso no IndexedDB.`);
-            };
-            updateRequest.onerror = function (e) {
-                console.log("Erro ao atualizar funcionário:", e.target.error);
-            };
+        updateRequest.onsuccess = function () {
+            console.log(`Funcionário ${idFuncionario} atualizado com sucesso no IndexedDB.`);
+        };
+        updateRequest.onerror = function (e) {
+            console.log('Erro ao atualizar funcionário:', e.target.error);
         };
     };
-}
+    }
 
 // função para deletar funcionário do indexedDB usando como parametro o id do funcionário
-function deletarFuncionarioIndexDB(idFuncionario) {
+async function deletarFuncionarioIndexDB(idFuncionario) {
+    const store = await obterStore('funcionarios', 'readwrite');
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('organizadorEscola', 1);
-
-        request.onerror = () => reject("Erro ao abrir o banco de dados.");
-
-        request.onsuccess = function (event) {
-            const db = event.target.result;
-            const tx = db.transaction(['funcionarios'], 'readwrite');
-            const store = tx.objectStore('funcionarios');
+            
             if (!idFuncionario) {
-                console.log("ID do funcionário inválido para remoção.");
-                reject("ID do funcionário inválido.");
+                console.log('ID do funcionário inválido para remoção.');
+                reject('ID do funcionário inválido.');
                 return;
             }
             const deleteRequest = store.delete(idFuncionario);
-            console.log("Tentando deletar funcionário com id " + idFuncionario);
+            console.log('Tentando deletar funcionário com id ' + idFuncionario);
             deleteRequest.onsuccess = function (event) {
-                console.log("Funcionário deletado com sucesso!");
+                console.log('Funcionário deletado com sucesso!');
                 resolve(); //remoção bem sucedida
             };
             deleteRequest.onerror = function (event) {
-                console.log("Erro ao deletar funcionário: "+ event.target.error);
+                console.log('Erro ao deletar funcionário: '+ event.target.error);
                 reject(event.target.error); //falha ao deletar
             }
+        });
+    }
+
+
+async function adicionarFuncionarioIndexDB(funcionario) {
+        const store = await obterStore('funcionarios', 'readwrite');
+        const addRequest = store.add(funcionario);
+        addRequest.onsuccess = () => {
+            console.log('Funcionario cadastrado com sucesso no IndexedDB!');
         };
+        addRequest.onerror = (e) => {
+            if (e.target.error.name === 'ConstraintError') {
+                console.log('Já existe um funcionário com esse nome no IndexedDB!');
+                alert('Esse nome já está cadastrado!');
+            } else {
+                console.log('Erro ao salvar:', e.target.error);
+            }
+        };
+    }
+
+
+async function carregarFuncionariosIndexDB() {
+    const store = await obterStore('funcionarios', 'readonly');
+    return new Promise((resolve, reject) => {
+        const getAll = store.getAll();
+        getAll.onsuccess = () => {
+            funcionarios = getAll.result; // <-- substitui o array
+            resolve(funcionarios);
+            console.log('Funcionários carregados do IndexedDB:', funcionarios);
+        };
+
+        getAll.onerror = () => reject(getAll.error);
     });
 }
 
-function adicionarFuncionarioIndexDB(funcionario) {
 
-    const request = indexedDB.open('organizadorEscola', 1);
-    request.onsuccess = function (event) {
-        const db = event.target.result;
-        const tx = db.transaction(['funcionarios'], 'readwrite');
-        const store = tx.objectStore('funcionarios');
 
-        const addRequest = store.add(funcionario);
 
-        addRequest.onsuccess = () => {
-            console.log("Funcionario cadastrado com sucesso no IndexedDB!");
-        };
-
-        addRequest.onerror = (e) => {
-            if (e.target.error.name === "ConstraintError") {
-                console.log("Já existe um funcionário com esse nome no IndexedDB!");
-                alert("Esse nome já está cadastrado!");
-            } else {
-                console.log("Erro ao salvar:", e.target.error);
-            }
-        };
-    };
-}
-
-async function carregarFuncionariosIndexDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open("organizadorEscola", 1);
-
-    req.onsuccess = e => {
-      const db = e.target.result;
-      const tx = db.transaction("funcionarios", "readonly");
-      const store = tx.objectStore("funcionarios");
-
-      const getAll = store.getAll();
-
-      getAll.onsuccess = () => {
-        funcionarios = getAll.result; // <-- substitui o array
-        resolve(funcionarios);
-        console.log("Funcionários carregados do IndexedDB:", funcionarios);
-      };
-
-      getAll.onerror = () => reject(getAll.error);
-    };
-
-    req.onerror = e => reject(e.target.error);
-  });
-}
 
 // Função para atualizar apenas os dropdowns de funcionários em todas as células
 function atualizarDropdownFuncionarios() {
-    console.log("Iniciando a atualização dos dropdowns de funcionários...");
+    console.log('Iniciando a atualização dos dropdowns de funcionários...');
     if (atividades.length === 0) {
-        console.log("Nenhuma atividade cadastrada. Dropdowns não precisão ser atualizados.");
+        console.log('Nenhuma atividade cadastrada. Dropdowns não precisão ser atualizados.');
         return;
     }
     atividades.forEach(atividade => {
@@ -280,7 +240,7 @@ function atualizarDropdownFuncionarios() {
             console.log(`Atualizando dropdown na célula: ${atividade.horarioInicio}-${atividade.sala}`);
             
             const funcionariosTexto = atividade.funcionariosAlocados.map((func, index) => {
-                return `<div>${func} <button class="remover" data-func-index="${index}" data-horarioInicio="${atividade.horarioInicio}" data-sala="${atividade.sala}">Remover</button></div>`;
+                return `<div>${func} <button class='remover' data-func-index='${index}' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover</button></div>`;
             }).join('');
 
             const funcionariosAlocados = atividade.funcionariosAlocados.length;
@@ -291,12 +251,12 @@ function atualizarDropdownFuncionarios() {
             console.log(`Funcionários restantes: ${funcionariosRestantes}`);
 
             // Atualiza apenas o dropdown de funcionários, mantendo as outras informações
-            let dropdown = `<select class="funcionario-disponivel" data-horarioInicio="${atividade.horarioInicio}" data-sala="${atividade.sala}">
-                                <option value="">Selecione funcionário</option>`;
+            let dropdown = `<select class='funcionario-disponivel' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>
+                                <option value=''>Selecione funcionário</option>`;
             funcionarios.forEach(func => {
                 console.log(`Analisando funcionário: ${func.nome}, Ocupado: ${func.ocupado}, Horários Ocupados: ${func.horariosOcupados}`);
                 if (!atividade.funcionariosAlocados.includes(func.nome) && !func.horariosOcupados.includes(atividade.horarioInicio)) {
-                    dropdown += `<option value="${func.nome}">${func.nome}</option>`;
+                    dropdown += `<option value='${func.nome}'>${func.nome}</option>`;
                 }
             });
             dropdown += `</select>`;
@@ -309,6 +269,7 @@ function atualizarDropdownFuncionarios() {
                 Funcionários:<br> ${funcionariosTexto}<br>
                 Alocados: ${funcionariosAlocados}/${atividade.funcionariosNecessarios}<br>
                 Faltam: ${funcionariosRestantes}<br>
+                <button class='remover-atividade' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover Atividade</button>
                 ${dropdown}`;
 
             console.log(`Dropdown atualizado para a célula: ${atividade.horarioInicio}-${atividade.sala}`);
@@ -316,6 +277,11 @@ function atualizarDropdownFuncionarios() {
             const removerButtons = cell.querySelectorAll('.remover');
             removerButtons.forEach(button => {
                 button.addEventListener('click', removerFuncionarioAtividade);
+            });
+
+            const removerButtonsAtividade = cell.querySelectorAll('.remover-atividade');
+            removerButtonsAtividade.forEach(button => {
+                button.addEventListener('click', removerAtividade);
             });
 
             const select = cell.querySelector('.funcionario-disponivel');
@@ -358,7 +324,7 @@ function cadastrarFuncionario() {
             horariosOcupados: [] 
         }); // Adiciona ao IndexedDB
         atualizarListaFuncionarios();
-        atualizarDropdownFuncionarios(); // Atualiza os dropdowns ao cadastrar um novo funcionário
+        atualizar(); // Atualiza os dropdowns ao cadastrar um novo funcionário
     } else {
         erroDiv.textContent = 'Nome do funcionário não pode ser vazio.';
         console.warn('Tentativa de cadastro de funcionário com nome vazio.');
@@ -394,7 +360,7 @@ function atualizarListaFuncionarios() {
                     deletarFuncionarioIndexDB(idFuncionario).then(() => {
                         console.log(`Funcionário ${func.nome} removido do IndexedDB.`);
                     }).catch(error => {
-                        console.log("Erro ao remover funcionário do IndexedDB:", error);
+                        console.log('Erro ao remover funcionário do IndexedDB:', error);
                     });
                 }
             });
@@ -451,7 +417,7 @@ function gerarGrade() {
         salas.forEach((sala, index) => {
             const div = document.createElement('div');
             const idGerado = `${hora}-${sala}`.replace(/\s+/g, ''); // Remove espaços extras do ID
-            div.id = idGerado;  // ID correto com espaço entre "Sala" e o número
+            div.id = idGerado;  // ID correto com espaço entre 'Sala' e o número
             // console.log(`Gerando célula com ID: ${div.id}`); // Verificação via console
             div.innerHTML = `<strong>${hora}</strong>`;
             gradeHorarios.appendChild(div);
@@ -546,6 +512,28 @@ function cadastrarAtividade() {
     }
 }
 
+function removerAtividade(event) {
+    const horario = event.target.getAttribute('data-horarioinicio');
+    const sala = event.target.getAttribute('data-sala');
+    console.log(atividades)
+    const atividade = atividades.find(a => a.horarioInicio === horario && a.sala === sala);
+    console.log(`Tentando Remover atividade na sala ${sala} às ${horario}`);
+
+    const atividadeIndex = atividades.findIndex(a => a.horarioInicio === horario && a.sala === sala);
+    if (atividadeIndex !== -1) {
+        const atividadeRemovida = atividades[atividadeIndex];
+
+        // Liberar os funcionários alocados da atividade removida
+        liberarFuncionarios(atividadeRemovida);
+
+        // Remover a atividade da lista
+        atividades.splice(atividadeIndex, 1);
+
+        // Atualizar a grade para refletir as mudanças
+        atualizarGradeComAtividades();
+    }
+}
+
 // Função para liberar os funcionários de uma atividade removida
 function liberarFuncionarios(atividade) {
     if (atividade && atividade.funcionariosAlocados.length > 0) {
@@ -576,24 +564,24 @@ function atualizarGradeComAtividades() {
     atividades.forEach(atividade => {
         const horaFormatada = String(atividade.horarioInicio).padStart(5, '0'); // Garante que o horário tenha formato HH:MM
         const cellId = `${horaFormatada}-${atividade.sala}`.replace(/\s+/g, '');
-        console.log(cellId)
         const cell = document.getElementById(cellId);
         
+        console.log(cellId)
         if (cell) {
             console.log(`Inserindo atividade: ${atividade.atividade} na célula: ${cellId}`); // Verificação via console
             
             const funcionariosTexto = atividade.funcionariosAlocados.map((func, index) => {
-                return `<div>${func} <button class="remover" data-func-index="${index}" data-horarioInicio="${atividade.horarioInicio}" data-sala="${atividade.sala}">Remover</button></div>`;
+                return `<div>${func} <button class='remover' data-func-index='${index}' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover</button></div>`;
             }).join('');
 
             const funcionariosAlocados = atividade.funcionariosAlocados.length;
             const funcionariosRestantes = atividade.funcionariosNecessarios - funcionariosAlocados;
 
-            let dropdown = `<select class="funcionario-disponivel" data-horarioInicio="${atividade.horarioInicio}" data-sala="${atividade.sala}">
-                                <option value="">Selecione funcionário</option>`;
+            let dropdown = `<select class='funcionario-disponivel' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>
+                                <option value=''>Selecione funcionário</option>`;
             funcionarios.forEach(func => {
                 if (!atividade.funcionariosAlocados.includes(func.nome) && !func.ocupado) {
-                    dropdown += `<option value="${func.nome}">${func.nome}</option>`;
+                    dropdown += `<option value='${func.nome}'>${func.nome}</option>`;
                 }
             });
             dropdown += `</select>`;
@@ -605,10 +593,24 @@ function atualizarGradeComAtividades() {
                 Funcionários:<br> ${funcionariosTexto}<br>
                 Alocados: ${funcionariosAlocados}/${atividade.funcionariosNecessarios}<br>
                 Faltam: ${funcionariosRestantes}<br>
+                <button class='remover-atividade' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover Atividade</button>
                 ${dropdown}`;
 
             // Exibe a atividade na célula correspondente
             cell.innerHTML += atividadeHtml;
+
+            
+            // Adiciona os event listeners para os botões de remover atividade
+            const removerButtonsAtividade = cell.querySelectorAll('.remover-atividade');
+            removerButtonsAtividade.forEach(button => {
+                button.addEventListener('click', removerAtividade);
+            });
+            // Adiciona os event listeners para os botões de remover funcionário
+            const removerButtons = cell.querySelectorAll('.remover');
+            removerButtons.forEach(button => {
+                button.addEventListener('click', removerFuncionarioAtividade);
+            });
+
         } else {
             console.error(`Erro: célula não encontrada para ${atividade.atividade} com ID ${cellId}`);
         }
@@ -746,7 +748,7 @@ function verificarAtividades() {
     let mensagemSemFunc ;
     let mensagemPoucoFunc ;
     if (atividadesSemFuncionario.length > 0) {
-        document.getElementById('statusAtividadesSemFunc').classList.add("cor-erro");
+        document.getElementById('statusAtividadesSemFunc').classList.add('cor-erro');
         mensagemSemFunc = `Atividades sem funcionários:<br>${resultadoSemFuncionario}`;
         document.getElementById('statusAtividadesSemFunc').innerHTML = mensagemSemFunc;
     }
@@ -755,14 +757,14 @@ function verificarAtividades() {
     }
     if(atividadesComPoucoFuncionario.length>0){
         mensagemPoucoFunc = `Atividades com pouco funcionários:<br>${resultadoPoucoFuncionario}`;
-        document.getElementById('statusAtividadesPoucoFunc').classList.add("cor-aviso");
+        document.getElementById('statusAtividadesPoucoFunc').classList.add('cor-aviso');
         document.getElementById('statusAtividadesPoucoFunc').innerHTML = mensagemPoucoFunc;
     }
     else{
         document.getElementById('statusAtividadesPoucoFunc').innerHTML = '';
     }
     if(atividadesSemFuncionario.length === 0 && atividadesComPoucoFuncionario.length === 0){
-        document.getElementById('statusAtividadesPreenchidas').classList.add("cor-sucesso");
+        document.getElementById('statusAtividadesPreenchidas').classList.add('cor-sucesso');
         mensagemSemFunc = 'Todas as atividades têm funcionários alocados.<br>';
         document.getElementById('statusAtividadesPreenchidas').innerHTML = mensagemSemFunc;
     }
@@ -779,19 +781,19 @@ function verificarAtividades() {
 window.onload = () => {
     
     //carrega os funcionarios do indexedDB ao abrir a pagina
-    
-        if (atividades.length == 0) {
-            console.log("Nenhuma atividade cadastrada no sistema.");
-            limparHorariosOcupadosFuncionariosIndexedDb()
-        }
-        carregarFuncionariosIndexDB().then(() => {
-        console.log("Funcionarios no array ",funcionarios);
-        atualizarDropdownFuncionarios();
-        atualizarListaFuncionarios();
-        gerarGrade();
-        preencherOpcoesSalas(); // Adiciona as opções de salas
-        atualizarSelecaoSalas();
-    
+    abrirBanco();
+    if (atividades.length == 0) {
+        console.log('Nenhuma atividade cadastrada no sistema.');
+        limparHorariosOcupadosFuncionariosIndexedDb()
+    }
+    carregarFuncionariosIndexDB().then(() => {
+    console.log('Funcionarios no array ',funcionarios);
+    atualizarGradeComAtividades
+    atualizarListaFuncionarios();
+    gerarGrade();
+    preencherOpcoesSalas(); // Adiciona as opções de salas
+    atualizarSelecaoSalas();
 
-    });
+
+});
 };

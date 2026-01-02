@@ -117,6 +117,14 @@ button.remover {
     margin-left: 10px;
 }
 
+button.remover-atividade {
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     #gradeHorarios {
