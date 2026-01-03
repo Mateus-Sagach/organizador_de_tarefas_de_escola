@@ -14,7 +14,7 @@ function abrirBanco() {
             return;
         }
 
-        const request = indexedDB.open('organizadorEscola', 1);
+        const request = indexedDB.open('organizadorEscola', 3);
 
         request.onerror = () => reject("Erro ao abrir o banco");
 
