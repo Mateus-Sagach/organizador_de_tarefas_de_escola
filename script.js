@@ -69,7 +69,7 @@ async function limparHorariosOcupadosFuncionariosIndexedDb() {
             };
         });
     };
-    }
+}
 
 async function obterNomeFuncionario(idFuncionario) {
     var objectStore = await obterStore('funcionarios', 'readwrite');
@@ -82,8 +82,8 @@ async function obterNomeFuncionario(idFuncionario) {
     // Trata erro!
         console.log('Não foi possível obter o nome do funcionário com id ' + idFuncionario);
     };
-    }
-
+}
+    
 async function obterIDFuncionario(nomeFuncionario) {
     var objectStore = await obterStore('funcionarios', 'readwrite');
     return new  Promise((resolve, reject) => {
@@ -106,7 +106,6 @@ async function obterIDFuncionario(nomeFuncionario) {
 
         });
 }
-
 
 async function adicionarHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
     const store = await obterStore('funcionarios', 'readwrite');
@@ -146,7 +145,6 @@ async function removerHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
         };
 }
 
-
 async function alterarOcupadoFuncionarioIndexDB(idFuncionario, ocupadoStatus) {
     const store = await obterStore('funcionarios', 'readwrite');
     const getRequest = store.get(idFuncionario);
@@ -162,7 +160,7 @@ async function alterarOcupadoFuncionarioIndexDB(idFuncionario, ocupadoStatus) {
             console.log('Erro ao atualizar funcionário:', e.target.error);
         };
     };
-    }
+}
 
 // função para deletar funcionário do indexedDB usando como parametro o id do funcionário
 async function deletarFuncionarioIndexDB(idFuncionario) {
@@ -185,8 +183,7 @@ async function deletarFuncionarioIndexDB(idFuncionario) {
                 reject(event.target.error); //falha ao deletar
             }
         });
-    }
-
+}
 
 async function adicionarFuncionarioIndexDB(funcionario) {
         const store = await obterStore('funcionarios', 'readwrite');
@@ -202,9 +199,9 @@ async function adicionarFuncionarioIndexDB(funcionario) {
                 console.log('Erro ao salvar:', e.target.error);
             }
         };
-    }
+}
 
-
+// carrega os funcionários do indexedDB para o array funcionarios
 async function carregarFuncionariosIndexDB() {
     const store = await obterStore('funcionarios', 'readonly');
     return new Promise((resolve, reject) => {
@@ -220,7 +217,101 @@ async function carregarFuncionariosIndexDB() {
 }
 
 
+async function adicionarAtividadeIndexDB(atividade) {
+    const store = await obterStore('atividades', 'readwrite');
+    const addRequest = store.add(atividade);
 
+    addRequest.onsuccess = () => {
+        console.log('Atividade cadastrada com sucesso no IndexedDB!');
+    };
+    addRequest.onerror = (e) => {
+        console.log('Erro ao salvar atividade:', e.target.error);
+    };
+}
+
+async function deletarAtividadeIndexDB(idAtividade) {
+    const store = await obterStore('atividades', 'readwrite');
+    console.log('Tentando deletar atividade com id ' + idAtividade);
+    const deleteRequest = store.delete(idAtividade);
+    return new Promise((resolve, reject) => {
+        deleteRequest.onsuccess = () => {
+            console.log('Atividade deletada com sucesso!');
+            resolve();
+        };
+        deleteRequest.onerror = (e) => {
+            console.log('Erro ao deletar atividade:', e.target.error);
+            reject(e.target.error);
+        };
+    });
+}
+
+async function adicionarFuncAlocadoAtividadeIndexDB(idAtividade, nomeFuncionario) {
+    const store =  await obterStore('atividades', 'readwrite').then(store => {
+            const getRequest = store.get(idAtividade);
+            getRequest.onsuccess = function (event) {
+                const atividadeData = getRequest.result;
+                atividadeData.funcionariosAlocados.push(nomeFuncionario);
+                const updateRequest = store.put(atividadeData);
+            };
+        });
+}
+
+async function removerFuncAlocadoAtividadeIndexDB(identificadorUnico, nomeFuncionario) {
+    const store = await obterStore('atividades', 'readwrite');
+        const getRequest = store.get(identificadorUnico);
+        getRequest.onsuccess = function (event) {
+            const atividadeData = getRequest.result;
+            if (atividadeData.funcionariosAlocados) {
+                atividadeData.funcionariosAlocados = atividadeData.funcionariosAlocados.filter(f => f !== nomeFuncionario);
+            }   
+            const updateRequest = store.put(atividadeData);
+            updateRequest.onsuccess = function () {
+                console.log(`Funcionário ${nomeFuncionario} removido da atividade ${identificadorUnico} no IndexedDB.`);
+            };
+            updateRequest.onerror = function (e) {
+                console.log('Erro ao atualizar atividade:', e.target.error);
+            };
+        };
+            updateRequest.onerror = function (e) {
+                console.log('Erro ao atualizar funcionário:', e.target.error);
+            };
+}
+
+async function obterIdAtividadeIndexDB(identificadorUnico) {
+    const store = await obterStore('atividades', 'readonly');
+    return new Promise((resolve, reject) => {
+         store.openCursor().onsuccess = function (event) {
+                var cursor = event.target.result;
+                if (cursor) {
+                    if(cursor.value.identificadorUnico === identificadorUnico){
+                        console.log('O id da atividade de Identificador ' + identificadorUnico + ' é ' + cursor.value.id);
+                        resolve(cursor.value.id);
+                        return;
+                    }
+                    cursor.continue();
+                } else {
+                    console.log('Não existe mais registros!');
+                    resolve(null); // Retorna null se não encontrar o nome passado no parametro
+                    
+                }
+            };
+    });
+}
+
+// carrega as atividades do indexedDB para o array atividades
+async function carregarAtividadesIndexDB() {
+    const store = await obterStore('atividades', 'readonly');
+    return new Promise((resolve, reject) => {
+        const getAll = store.getAll();
+        getAll.onsuccess = () => {
+            atividades = getAll.result;
+            resolve(atividades);
+            console.log('Atividades carregadas do IndexedDB:', atividades);
+        };
+
+        getAll.onerror = () => reject(getAll.error);
+    });
+}
 
 
 // Função para atualizar apenas os dropdowns de funcionários em todas as células
@@ -255,6 +346,7 @@ function atualizarDropdownFuncionarios() {
                                 <option value=''>Selecione funcionário</option>`;
             funcionarios.forEach(func => {
                 console.log(`Analisando funcionário: ${func.nome}, Ocupado: ${func.ocupado}, Horários Ocupados: ${func.horariosOcupados}`);
+
                 if (!atividade.funcionariosAlocados.includes(func.nome) && !func.horariosOcupados.includes(atividade.horarioInicio)) {
                     dropdown += `<option value='${func.nome}'>${func.nome}</option>`;
                 }
@@ -269,7 +361,7 @@ function atualizarDropdownFuncionarios() {
                 Funcionários:<br> ${funcionariosTexto}<br>
                 Alocados: ${funcionariosAlocados}/${atividade.funcionariosNecessarios}<br>
                 Faltam: ${funcionariosRestantes}<br>
-                <button class='remover-atividade' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover Atividade</button>
+                <button class='remover-atividade' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover Atividade</button><br>
                 ${dropdown}`;
 
             console.log(`Dropdown atualizado para a célula: ${atividade.horarioInicio}-${atividade.sala}`);
@@ -311,7 +403,7 @@ function cadastrarFuncionario() {
     if (nome) {
         funcionarios.push({ 
             nome,
-            ocupado: false ,
+            ocupado: false,
             horariosOcupados: []    
         });
         console.log(`Funcionário cadastrado: ${nome}`);
@@ -324,7 +416,8 @@ function cadastrarFuncionario() {
             horariosOcupados: [] 
         }); // Adiciona ao IndexedDB
         atualizarListaFuncionarios();
-        atualizar(); // Atualiza os dropdowns ao cadastrar um novo funcionário
+        atualizarGradeComAtividades();
+ // Atualiza os dropdowns ao cadastrar um novo funcionário
     } else {
         erroDiv.textContent = 'Nome do funcionário não pode ser vazio.';
         console.warn('Tentativa de cadastro de funcionário com nome vazio.');
@@ -479,6 +572,17 @@ function cadastrarAtividade() {
             if (atividadeExistente) {
                 console.log(`Sobrescrevendo atividade existente: ${atividadeExistente.atividade} na sala ${sala} às ${horaInicio}`);
                 
+                // Remover do IndexedDB
+                obterIdAtividadeIndexDB(atividadeExistente.identificadorUnico).then(idAtividade => {
+                    if (idAtividade) {
+                        deletarAtividadeIndexDB(idAtividade).then(() => {
+                            console.log(`Atividade ${atividadeExistente.atividade} removida do IndexedDB para sobrescrição.`);
+                        }).catch(error => {
+                            console.log('Erro ao remover atividade do IndexedDB:', error);
+                        });
+                    }
+                });
+
                 // Liberar os funcionários alocados da atividade existente
                 liberarFuncionarios(atividadeExistente);
 
@@ -493,11 +597,24 @@ function cadastrarAtividade() {
                 sala: sala,
                 atividade: nomeAtividade,
                 observacao: observacao,
+                identificadorUnico: `${horaInicio}-${sala}`,
                 funcionariosNecessarios: numFuncionarios,
                 funcionariosAlocados: [] // Começa sem funcionários alocados
             });
-
+            
             console.log(`Atividade cadastrada com sucesso: ${nomeAtividade} na sala ${sala} das ${horaInicio} às ${horaFim}`);
+
+            adicionarAtividadeIndexDB({
+                horarioInicio: horaInicio,
+                horarioFim: horaFim,
+                sala: sala,
+                atividade: nomeAtividade,
+                observacao: observacao,
+                identificadorUnico: `${horaInicio}-${sala}`,
+                funcionariosNecessarios: numFuncionarios,
+                funcionariosAlocados: []
+            });
+
         });
 
         // Limpar campos de cadastro
@@ -520,16 +637,24 @@ function removerAtividade(event) {
     console.log(`Tentando Remover atividade na sala ${sala} às ${horario}`);
 
     const atividadeIndex = atividades.findIndex(a => a.horarioInicio === horario && a.sala === sala);
+    console.log('atividadeIndex:', atividadeIndex);
     if (atividadeIndex !== -1) {
         const atividadeRemovida = atividades[atividadeIndex];
-
+        console.log(`Atividade encontrada para remoção: ${atividadeRemovida} na sala ${sala} às ${horario}`);
         // Liberar os funcionários alocados da atividade removida
         liberarFuncionarios(atividadeRemovida);
-
         // Remover a atividade da lista
+        
+        obterIdAtividadeIndexDB(atividadeRemovida.identificadorUnico).then(idAtividade => {
+                if (idAtividade) {
+                    deletarAtividadeIndexDB(idAtividade).then(() => {
+                        console.log(`Atividade ${atividadeRemovida.atividade} removida do IndexedDB.`);
+                    }).catch(error => {
+                        console.log('Erro ao remover atividade do IndexedDB:', error);
+                    });
+                }
+            });
         atividades.splice(atividadeIndex, 1);
-
-        // Atualizar a grade para refletir as mudanças
         atualizarGradeComAtividades();
     }
 }
@@ -569,7 +694,7 @@ function atualizarGradeComAtividades() {
         console.log(cellId)
         if (cell) {
             console.log(`Inserindo atividade: ${atividade.atividade} na célula: ${cellId}`); // Verificação via console
-            
+            console.log(atividade.funcionariosAlocados)
             const funcionariosTexto = atividade.funcionariosAlocados.map((func, index) => {
                 return `<div>${func} <button class='remover' data-func-index='${index}' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover</button></div>`;
             }).join('');
@@ -646,9 +771,18 @@ function removerFuncionarioAtividade(event) {
 
 
     if (atividade) {
+
         const funcionarioRemovido = atividade.funcionariosAlocados.splice(funcIndex, 1)[0];
+
         const funcionario = funcionarios.find(f => f.nome === funcionarioRemovido);
         if (funcionario) {
+            obterIdAtividadeIndexDB(atividade.identificadorUnico).then(idAtividade => {
+                if (idAtividade) {
+                // Atualiza a atividade no IndexedDB
+                    removerFuncAlocadoAtividadeIndexDB(atividade.identificadorUnico, funcionarioRemovido.nome);
+                }
+            });
+
             funcionario.ocupado = false;
             funcionario.horariosOcupados = funcionario.horariosOcupados.filter(h => h !== horario);
             console.log(`Funcionário ${funcionarioRemovido} removido da atividade ${atividade.atividade} na sala ${sala} às ${horario}`);
@@ -659,6 +793,11 @@ function removerFuncionarioAtividade(event) {
                                 removerHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario);
                             }
                         });
+            obterIdAtividadeIndexDB(atividade.identificadorUnico).then(idAtividade => {
+                if (idAtividade) {
+                    removerFuncAlocadoAtividadeIndexDB(idAtividade, funcionario.nome);
+                }
+            });
         }
         atualizarGradeComAtividades();
     }
@@ -695,7 +834,15 @@ function alocarFuncionarioPorDropdown(event) {
                     // Alocar o funcionário
                     atividade.funcionariosAlocados.push(funcionarioNome);
                     console.log(`Funcionário ${funcionarioNome} alocado com sucesso!`);
-                    
+                    // Atualiza o IndexedDB para refletir a alocação
+                    obterIdAtividadeIndexDB(atividade.identificadorUnico).then(idAtividade => {
+                        if (idAtividade) {
+                            // Atualiza a atividade no IndexedDB
+                            adicionarFuncAlocadoAtividadeIndexDB(idAtividade, funcionarioNome);
+                            console.log(`Funcionário ${funcionarioNome} adicionado à atividade ${atividade.atividade} no IndexedDB.`);
+                        }
+                    });
+
                     // Marcar o funcionário como ocupado
                     const funcionario = funcionarios.find(f => f.nome === funcionarioNome);
                     if (funcionario) {
@@ -782,18 +929,23 @@ window.onload = () => {
     
     //carrega os funcionarios do indexedDB ao abrir a pagina
     abrirBanco();
-    if (atividades.length == 0) {
-        console.log('Nenhuma atividade cadastrada no sistema.');
-        limparHorariosOcupadosFuncionariosIndexedDb()
-    }
+    // if (atividades.length == 0) {
+    //     console.log('Nenhuma atividade cadastrada no sistema.');
+    //     limparHorariosOcupadosFuncionariosIndexedDb()
+    // }
+
     carregarFuncionariosIndexDB().then(() => {
-    console.log('Funcionarios no array ',funcionarios);
-    atualizarGradeComAtividades
-    atualizarListaFuncionarios();
-    gerarGrade();
-    preencherOpcoesSalas(); // Adiciona as opções de salas
-    atualizarSelecaoSalas();
+        console.log('Funcionarios no array ',funcionarios);
+        gerarGrade();
+        preencherOpcoesSalas();
+        atualizarGradeComAtividades();
+        atualizarListaFuncionarios();
+        atualizarSelecaoSalas();
+    });
 
+    carregarAtividadesIndexDB().then(() => {
+        console.log('Atividades no array ',atividades);
+        atualizarGradeComAtividades();
 
-});
+    });
 };
