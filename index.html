@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Controle de Funcionários da Escola/Creche</h1>
+    <h1>Controle de Funcionários da Escola</h1>
 
     <!-- Cadastro de Funcionários -->
     <section>
@@ -17,14 +17,23 @@
         <div id="mensagemErroFuncionario" class="erro"></div>
         <ul id="listaFuncionarios"></ul>
     </section>
+    <br><br><br><br>
 
     <!-- Cadastro de Atividades -->
 <!-- Modificar a seção de Cadastro de Atividades -->
 <section>
     <h2>Cadastrar Atividade</h2>
+    <!-- Seleção do Dia da Semana -->
+    <select id="diaSemanaSelect">
+    <option value="segunda">Segunda</option>
+    <option value="terca">Terça</option>
+    <option value="quarta">Quarta</option>
+    <option value="quinta">Quinta</option>
+    <option value="sexta">Sexta</option>
+    </select>
     <input type="text" id="nomeAtividade" placeholder="Nome da Atividade">
-    
     <!-- Faixa de Horário -->
+    <div>
     <label for="horaInicioAtividade">Hora de Início:</label>
     <select id="horaInicioAtividade">
         <option value="6:00">6:00</option>
@@ -40,7 +49,8 @@
             <option value="16:00">16:00</option>
             <option value="17:00">17:00</option>
     </select>
-
+    </div>
+    <div>
     <label for="horaFimAtividade">Hora de Fim:</label>
     <select id="horaFimAtividade">
         <option value="6:00">6:00</option>
@@ -56,13 +66,13 @@
             <option value="16:00">16:00</option>
             <option value="17:00">17:00</option>
     </select>
-
+    </div>
     <!-- Seleção de Salas -->
     <label for="salasAtividade">Selecionar Salas:</label>
     <select  id="salasAtividade"></select>
     
     <!-- Observação -->
-    <input type="text" id="observacaoAtividade" placeholder="Observações (ex: 15min de atividade)" />
+    <input type="text" id="observacaoAtividade" placeholder="Observações (ex: feira de profissões )" />
 
     <input type="number" id="numFuncionarios" placeholder="Funcionários necessários" min="1">
     <button onclick="cadastrarAtividade()">Cadastrar Atividade</button>
