@@ -124,16 +124,3 @@ button.remover-atividade {
     cursor: pointer;
     margin-left: 10px;
 }
-
-/* Responsividade */
-@media (max-width: 768px) {
-    #gradeHorarios {
-        grid-template-columns: auto repeat(2, 1fr); /* Reduz a quantidade de colunas em telas menores */
-    }
-}
-
-@media (max-width: 480px) {
-    #gradeHorarios {
-        grid-template-columns: auto 1fr; /* Mostra uma coluna de dia por vez em telas muito pequenas */
-    }
-}

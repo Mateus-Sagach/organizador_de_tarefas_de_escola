@@ -62,22 +62,6 @@ async function obterStore(nomeStore, modo = 'readonly') {
     return tx.objectStore(nomeStore);
 }
 
-//função chamada para limpar todos os horarios ocupados de todos os funcionários no indexedDB
-async function limparHorariosOcupadosFuncionariosIndexedDb() {
-    const store = await obterStore('funcionarios', 'readwrite');
-    const getAllRequest = store.getAll();
-
-    getAllRequest.onsuccess = function () {
-        const funcionariosData = getAllRequest.result;
-        funcionariosData.forEach(funcionarioData => {
-            funcionarioData.horariosOcupados = []; // Limpa os horários ocupados
-            const updateRequest = store.put(funcionarioData);
-            updateRequest.onsuccess = function () {
-                console.log(`Horários ocupados limpos para o funcionário ${funcionarioData.id}.`);
-            };
-        });
-    };
-}
 
 async function obterNomeFuncionario(idFuncionario) {
     var objectStore = await obterStore('funcionarios', 'readwrite');
@@ -115,60 +99,6 @@ async function obterIDFuncionario(nomeFuncionario) {
         });
 }
 
-async function adicionarHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
-    const store = await obterStore('funcionarios', 'readwrite');
-    const getRequest = store.get(idFuncionario);
-    getRequest.onsuccess = function (event) {
-        const funcionarioData = getRequest.result;
-        if (!funcionarioData.horariosOcupados) {
-            funcionarioData.horariosOcupados = [];
-        }
-        funcionarioData.horariosOcupados.push(horario);
-        const updateRequest = store.put(funcionarioData);
-        updateRequest.onsuccess = function () {
-            console.log(`Horário ${horario} adicionado ao funcionário ${idFuncionario} no IndexedDB.`);
-        };
-        updateRequest.onerror = function (e) {
-            console.log('Erro ao atualizar funcionário:', e.target.error);
-        };
-    };
-
-}
-
-async function removerHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario) {
-        const store = await obterStore('funcionarios', 'readwrite');
-        const getRequest = store.get(idFuncionario);
-        getRequest.onsuccess = function (event) {
-            const funcionarioData = getRequest.result;
-            if (funcionarioData.horariosOcupados) {
-                funcionarioData.horariosOcupados = funcionarioData.horariosOcupados.filter(h => h !== horario);
-            }   
-            const updateRequest = store.put(funcionarioData);
-            updateRequest.onsuccess = function () {
-                console.log(`Horário ${horario} removido do funcionário ${idFuncionario} no IndexedDB.`);
-            };
-            updateRequest.onerror = function (e) {
-                console.log('Erro ao atualizar funcionário:', e.target.error);
-            };
-        };
-}
-
-async function alterarOcupadoFuncionarioIndexDB(idFuncionario, ocupadoStatus) {
-    const store = await obterStore('funcionarios', 'readwrite');
-    const getRequest = store.get(idFuncionario);
-    getRequest.onsuccess = function (event) {
-        const funcionarioData = getRequest.result;
-        funcionarioData.ocupado = ocupadoStatus;
-        const updateRequest = store.put(funcionarioData);
-
-        updateRequest.onsuccess = function () {
-            console.log(`Funcionário ${idFuncionario} atualizado com sucesso no IndexedDB.`);
-        };
-        updateRequest.onerror = function (e) {
-            console.log('Erro ao atualizar funcionário:', e.target.error);
-        };
-    };
-}
 
 // função para deletar funcionário do indexedDB usando como parametro o id do funcionário
 async function deletarFuncionarioIndexDB(idFuncionario) {
@@ -346,7 +276,7 @@ async function carregarAtividadesIndexDB() {
     });
 }
 
-//função que verifica se o funcionário está ocupado no dia e horário especificados, se sim retorna true, senão false
+//função que verifica se o funcionário está alocado/ocupado em alguma atividade no dia e horário especificados, se sim retorna true, senão false
 function funcionarioOcupadoNoDiaHorario(nomeFuncionario, dia, horario) {
     return atividades.some(atividade =>
         atividade.diaSemana === dia &&
@@ -355,83 +285,10 @@ function funcionarioOcupadoNoDiaHorario(nomeFuncionario, dia, horario) {
     );
 }
 
-// Função para atualizar apenas os dropdowns de funcionários em todas as células
-function atualizarDropdownFuncionarios() {
-    console.log('Iniciando a atualização dos dropdowns de funcionários...');
-
-     const atividadesFiltradas = atividades.filter(
-        a => a.diaSemana === diaSelecionado
-    );
-
-    atividadesFiltradas.forEach(atividade => {
-        const horaFormatada = String(atividade.horarioInicio).padStart(5, '0'); // Garante que o horário tenha formato HH:MM
-        const cellId = `${horaFormatada}-${atividade.sala}`.replace(/\s+/g, '');
-        const cell = document.getElementById(cellId);
-    
-        console.log(cell)
-        if (cell) {
-            console.log(`Atualizando dropdown na célula: ${atividade.horarioInicio}-${atividade.sala}-${atividade.diaSemana}`);
-            
-            const funcionariosTexto = atividade.funcionariosAlocados.map((func, index) => {
-                return `<div>${func} <button class='remover' data-func-index='${index}' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}' data-diaSemana='${atividade.diaSemana}'>Remover</button></div>`;
-            }).join('');
-
-            const funcionariosAlocados = atividade.funcionariosAlocados.length;
-            const funcionariosRestantes = atividade.funcionariosNecessarios - funcionariosAlocados;
-
-            // Log dos funcionários disponíveis para o dropdown
-            console.log(`Funcionários alocados: ${atividade.funcionariosAlocados}`);
-            console.log(`Funcionários restantes: ${funcionariosRestantes}`);
-
-            // Atualiza apenas o dropdown de funcionários, mantendo as outras informações
-            let dropdown = `<select class='funcionario-disponivel' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>
-                                <option value=''>Selecione funcionário</option>`;
-            funcionarios.forEach(func => {
-                console.log(`Analisando funcionário: ${func.nome}, Ocupado: ${func.ocupado}, Horários Ocupados: ${func.horariosOcupados}`);
-                if (!funcionarioOcupadoNoDiaHorario(func.nome, diaSelecionado, atividade.horarioInicio)) {
-                    dropdown += `<option value='${func.nome}'>${func.nome}</option>`;
-                }
-            });
-            dropdown += `</select>`;
-
-            // Atualizar a célula com as novas opções no dropdown sem alterar as demais informações
-            cell.innerHTML = `
-                <strong>${atividade.atividade}</strong><br>
-                <em>(${atividade.horarioInicio} - ${atividade.horarioFim})</em><br>
-                Observação: ${atividade.observacao}<br>
-                Funcionários:<br> ${funcionariosTexto}<br>
-                Alocados: ${funcionariosAlocados}/${atividade.funcionariosNecessarios}<br>
-                Faltam: ${funcionariosRestantes}<br>
-                <button class='remover-atividade' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover Atividade</button><br>
-                ${dropdown}`;
-
-            console.log(`Dropdown atualizado para a célula: ${atividade.horarioInicio}-${atividade.sala}`);
-
-            const removerButtons = cell.querySelectorAll('.remover');
-            removerButtons.forEach(button => {
-                button.addEventListener('click', removerFuncionarioAtividadeEspecifica);
-            });
-
-            const removerButtonsAtividade = cell.querySelectorAll('.remover-atividade');
-            removerButtonsAtividade.forEach(button => {
-                button.addEventListener('click', removerAtividade);
-            });
-
-            const select = cell.querySelector('.funcionario-disponivel');
-            select.addEventListener('change', alocarFuncionarioPorDropdown);
-        } else {
-            console.warn(`Célula não encontrada: ${atividade.horarioInicio}-${atividade.sala}`);
-        }
-    });
-
-    verificarAtividades();
-}
-
 // Chamar a função de atualização dos dropdowns após cadastrar um novo funcionário
 function cadastrarFuncionario() {
     const nome = document.getElementById('nomeFuncionario').value.trim();
     const erroDiv = document.getElementById('mensagemErroFuncionario');
-    const horariosOcupados = [];
 
     console.log(`Tentando cadastrar funcionário: ${nome}`);
 
@@ -445,21 +302,16 @@ function cadastrarFuncionario() {
 
     if (nome) {
         funcionarios.push({ 
-            nome,
-            ocupado: false,
-            horariosOcupados: [],
-            diaSemana: diaSelecionado
+            nome
         });
         console.log(`Funcionário cadastrado: ${nome}`);
         
         document.getElementById('nomeFuncionario').value = '';
         erroDiv.textContent = '';
         adicionarFuncionarioIndexDB({ 
-            nome: nome, 
-            ocupado: false, 
-            horariosOcupados: [],
-            diaSemana: diaSelecionado
+            nome: nome
         }); // Adiciona ao IndexedDB
+
         atualizarListaFuncionarios();
         atualizarGradeComAtividades();
  // Atualiza os dropdowns ao cadastrar um novo funcionário
@@ -529,6 +381,7 @@ function gerarGrade() {
     contagemCiclos++;
     console.log(`Gerando grade de horários. Contagem de ciclos: passou ${contagemCiclos} vezes pelo gerarGrade()`);
     const horarios = Array.from({ length: 12 }, (_, i) => `${String(i + 6).padStart(2, '0')}:00`); // Horários formatados como 06:00, 07:00, etc.
+    console.log('Horários gerados para a grade:', horarios);
     const gradeHorarios = document.getElementById('gradeHorarios');
 
     gradeHorarios.innerHTML = ''; // Limpa a grade antes de gerar novamente
@@ -539,25 +392,17 @@ function gerarGrade() {
     gradeHorarios.appendChild(blankHeader);
 
     // Nomes das salas, inicializando com valores padrão
-    let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];
+    let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Patio' ];
 
     // Cabeçalhos com os nomes das salas e editáveis
     salas.forEach((sala, index) => {
         const div = document.createElement('div');
         div.classList.add('header');
-        
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = sala;
-        input.addEventListener('input', (event) => {
-            salas[index] = event.target.value; // Atualiza o nome da sala
-            atualizarSelecaoSalas(); // Atualiza a seleção de salas no cadastro de atividades
-        });
-        
-        div.appendChild(input);
+        div.textContent = sala; 
         gradeHorarios.appendChild(div);
     });
 
+    atualizarSelecaoSalas(); 
     // Horários de 06:00 até 17:00 e as células correspondentes
     horarios.forEach(hora => {
         // Coluna com o horário
@@ -687,7 +532,17 @@ function cadastrarAtividade() {
         // Atualizar a grade para refletir as mudanças
         atualizarGradeComAtividades();
     } else {
-        alert('Por favor, preencha todos os campos corretamente.');
+        console.warn('Erro ao cadastrar atividade: Preencha todos os campos corretamente.');
+        if(horaInicioPrimeiroNum>=horaFimPrimeiroNum){
+            alert('A hora de início deve ser um horário anterior que a hora de término.');
+        }
+        if(!nomeAtividade){
+            alert('O nome da atividade não pode estar vazio.');
+        }
+        if(numFuncionarios<=0 || isNaN(numFuncionarios)){
+            alert('O número de funcionários necessários deve ser um número maior que zero.');
+        }
+        
     }
 }
 
@@ -724,22 +579,6 @@ function removerAtividade(event) {
 // Função para liberar os funcionários de uma atividade removida
 function liberarFuncionarios(atividade) {
     if (atividade && atividade.funcionariosAlocados.length > 0) {
-        atividade.funcionariosAlocados.forEach(funcionarioNome => {
-            const funcionario = funcionarios.find(f => f.nome === funcionarioNome);
-            if (funcionario) {
-                funcionario.ocupado = false;
-                funcionario.horariosOcupados = funcionario.horariosOcupados.filter(h => h !== atividade.horarioInicio);
-                console.log(`Funcionário ${funcionarioNome} liberado da atividade ${atividade.atividade}`);
-                // Atualiza o IndexedDB para refletir a liberação
-                obterIDFuncionario(funcionarioNome).then(idFuncionario => {
-                    if (idFuncionario) {
-                        alterarOcupadoFuncionarioIndexDB(idFuncionario, false);
-                        removerHorarioOcupadoFuncionarioIndexDB(idFuncionario, atividade.horarioInicio);
-
-                    }
-                });
-            }
-        });
         atividade.funcionariosAlocados = []; // Remove todos os funcionários alocados da atividade
     }
 }
@@ -747,83 +586,94 @@ function liberarFuncionarios(atividade) {
 // Alteração na função de atualizar a grade de atividades
 function atualizarGradeComAtividades() {
     gerarGrade(); // Regenera a grade de horários
+    
+    console.log('Iniciando a atualização dos dropdowns de funcionários...');
 
-    const atividadesFiltradas = atividades.filter(
+     const atividadesFiltradas = atividades.filter(
         a => a.diaSemana === diaSelecionado
     );
-    console.log(`Atualizando grade para o dia: ${diaSelecionado}`);
-    console.log('Atividades a serem exibidas:', atividadesFiltradas);
 
     atividadesFiltradas.forEach(atividade => {
         const horaFormatada = String(atividade.horarioInicio).padStart(5, '0'); // Garante que o horário tenha formato HH:MM
         const cellId = `${horaFormatada}-${atividade.sala}`.replace(/\s+/g, '');
         const cell = document.getElementById(cellId);
-        
-        console.log(cellId)
+    
+        console.log(cell)
         if (cell) {
-            console.log(`Inserindo atividade: ${atividade.atividade} na célula: ${cellId}`); // Verificação via console
-            console.log(atividade.funcionariosAlocados)
+            console.log(`Atualizando dropdown na célula: ${atividade.horarioInicio}-${atividade.sala}-${atividade.diaSemana}`);
+            
             const funcionariosTexto = atividade.funcionariosAlocados.map((func, index) => {
-                return `<div>${func} <button class='remover' data-func-index='${index}' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover</button></div>`;
+                return `<div>${func} <button class='remover' data-func-index='${index}' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}' data-diaSemana='${atividade.diaSemana}'>Remover</button></div>`;
             }).join('');
 
             const funcionariosAlocados = atividade.funcionariosAlocados.length;
             const funcionariosRestantes = atividade.funcionariosNecessarios - funcionariosAlocados;
 
+            // Log dos funcionários disponíveis para o dropdown
+            console.log(`Funcionários alocados: ${atividade.funcionariosAlocados}`);
+            console.log(`Funcionários restantes: ${funcionariosRestantes}`);
+
+            // Atualiza apenas o dropdown de funcionários, mantendo as outras informações
             let dropdown = `<select class='funcionario-disponivel' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>
                                 <option value=''>Selecione funcionário</option>`;
             funcionarios.forEach(func => {
-                if (!atividade.funcionariosAlocados.includes(func.nome) && !func.ocupado) {
+                console.log(`Analisando funcionário: ${func.nome}`);
+                if (!funcionarioOcupadoNoDiaHorario(func.nome, diaSelecionado, atividade.horarioInicio)) {
                     dropdown += `<option value='${func.nome}'>${func.nome}</option>`;
                 }
             });
             dropdown += `</select>`;
 
-            const atividadeHtml = `
+            // Atualizar a célula com as novas opções no dropdown sem alterar as demais informações
+            cell.innerHTML = `
                 <strong>${atividade.atividade}</strong><br>
                 <em>(${atividade.horarioInicio} - ${atividade.horarioFim})</em><br>
                 Observação: ${atividade.observacao}<br>
                 Funcionários:<br> ${funcionariosTexto}<br>
                 Alocados: ${funcionariosAlocados}/${atividade.funcionariosNecessarios}<br>
                 Faltam: ${funcionariosRestantes}<br>
-                <button class='remover-atividade' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover Atividade</button>
+                <button class='remover-atividade' data-horarioInicio='${atividade.horarioInicio}' data-sala='${atividade.sala}'>Remover Atividade</button><br>
                 ${dropdown}`;
 
-            // Exibe a atividade na célula correspondente
-            cell.innerHTML += atividadeHtml;
+            console.log(`Dropdown atualizado para a célula: ${atividade.horarioInicio}-${atividade.sala}`);
 
-            
-            // Adiciona os event listeners para os botões de remover atividade
-            const removerButtonsAtividade = cell.querySelectorAll('.remover-atividade');
-            removerButtonsAtividade.forEach(button => {
-                button.addEventListener('click', removerAtividade);
-            });
-            // Adiciona os event listeners para os botões de remover funcionário
             const removerButtons = cell.querySelectorAll('.remover');
             removerButtons.forEach(button => {
                 button.addEventListener('click', removerFuncionarioAtividadeEspecifica);
             });
 
+            const removerButtonsAtividade = cell.querySelectorAll('.remover-atividade');
+            removerButtonsAtividade.forEach(button => {
+                button.addEventListener('click', removerAtividade);
+            });
+
+            const select = cell.querySelector('.funcionario-disponivel');
+            select.addEventListener('change', alocarFuncionarioPorDropdown);
         } else {
-            console.error(`Erro: célula não encontrada para ${atividade.atividade} com ID ${cellId}`);
+            console.warn(`Célula não encontrada: ${atividade.horarioInicio}-${atividade.sala}`);
         }
     });
 
-    atualizarDropdownFuncionarios()
+    verificarAtividades();
 }
 
 // Função para preencher o select de salas com os nomes das salas do grid
 function atualizarSelecaoSalas() {
+    console.log('Iniciando atualização da seleção de salas no cadastro de atividades...');
     const selectSalas = document.getElementById('salasAtividade');
-    selectSalas.innerHTML = ''; // Limpar opções anteriores
-    
-    let salas = document.querySelectorAll('#gradeHorarios .header input'); // Seleciona os inputs do cabeçalho (salas)
+    selectSalas.innerHTML = '';
 
-    salas.forEach((input, index) => {
-        const option = document.createElement('option');
-        option.value = input.value; // Usar o nome atual da sala
-        option.textContent = input.value;
-        selectSalas.appendChild(option);
+    const headers = document.querySelectorAll('#gradeHorarios .header');
+
+    headers.forEach(header => {
+        const nomeSala = header.textContent.trim();
+        console.log(`Adicionando sala ao select: ${nomeSala}`);
+        if (nomeSala) {
+            const option = document.createElement('option');
+            option.value = nomeSala;
+            option.textContent = nomeSala;
+            selectSalas.appendChild(option);
+        }
     });
 }
 
@@ -872,16 +722,7 @@ function removerFuncionarioAtividadeEspecifica(event) {
                 }
             });
 
-            funcionario.ocupado = false;
-            funcionario.horariosOcupados = funcionario.horariosOcupados.filter(h => h !== horario);
             console.log(`Funcionário ${funcionarioRemovido} removido da atividade ${atividade.atividade} na sala ${sala} às ${horario}`);
-            // Atualiza o IndexedDB para refletir a remoção
-            obterIDFuncionario(funcionario.nome).then(idFuncionario => {
-                            if (idFuncionario) {
-                                alterarOcupadoFuncionarioIndexDB(idFuncionario, false);
-                                removerHorarioOcupadoFuncionarioIndexDB(idFuncionario, horario);
-                            }
-            });
 
         }
         atualizarGradeComAtividades();
@@ -928,22 +769,6 @@ function alocarFuncionarioPorDropdown(event) {
                         }
                     });
 
-                    // Marcar o funcionário como ocupado
-                    const funcionario = funcionarios.find(f => f.nome === funcionarioNome);
-                    if (funcionario) {
-                        funcionario.ocupado = true;
-                        funcionario.horariosOcupados.push(horarioInicio);
-                        //faz alteração no indexedDB para marcar como ocupado
-
-                        obterIDFuncionario(funcionarioNome).then(idFuncionario => {
-                            if (idFuncionario) {
-                                alterarOcupadoFuncionarioIndexDB(idFuncionario, true);
-                                adicionarHorarioOcupadoFuncionarioIndexDB(idFuncionario, horarioInicio);
-                                console.log(`Funcionário ${funcionarioNome} marcado como ocupado no IndexedDB no horário ${horarioInicio}.`);
-                            }
-                        });
-                        
-                    }
                     // Limpar a seleção
                     event.target.value = '';
                     atualizarGradeComAtividades(); // Atualiza a célula da atividade
