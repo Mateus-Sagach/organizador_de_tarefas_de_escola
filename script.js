@@ -1,9 +1,28 @@
 let funcionarios = [];
 let atividades = [];
-let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];
+let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Patio'];
 let contagemCiclos = 0;
 let dbCarregado = null;
 let diaSelecionado = "segunda";
+const horarios = [
+    "06:10",
+    "07:00",
+    "07:50",
+    "08:40",
+    // intervalo 09:30 → 09:50
+    "09:50",
+    "10:40",
+    "11:30",
+    "12:20",
+    // intervalo almoço
+    "13:00",
+    "13:50",
+    "14:40",
+    "15:30",
+    // intervalo 15:30 → 15:50
+    "15:50",
+    "16:40",
+    "17:30"];
 
 
 
@@ -353,16 +372,9 @@ function atualizarListaFuncionarios() {
                 }
             });
 
-            //
-            //
-            //
-            //
-            //
 
-            //rever essee trecho que é onde estava havendo bug
             removerFuncionarioDeTodasAtividades(func.nome);
             console.log('Atividades', atividades);
-            //atualizarAtividesIndexDB(atividades); // Atualiza todas as atividades no IndexedDB rever esse trecho também se necessário
             atualizarListaFuncionarios();
             atualizarGradeComAtividades(); // Atualiza a grade para refletir a remoção do funcionário
 
@@ -380,7 +392,8 @@ function atualizarListaFuncionarios() {
 function gerarGrade() {
     contagemCiclos++;
     console.log(`Gerando grade de horários. Contagem de ciclos: passou ${contagemCiclos} vezes pelo gerarGrade()`);
-    const horarios = Array.from({ length: 12 }, (_, i) => `${String(i + 6).padStart(2, '0')}:00`); // Horários formatados como 06:00, 07:00, etc.
+    
+    // const horarios = Array.from({ length: 12 }, (_, i) => `${String(i + 6).padStart(2, '0')}:00`); // Horários formatados como 06:00, 07:00, etc.
     console.log('Horários gerados para a grade:', horarios);
     const gradeHorarios = document.getElementById('gradeHorarios');
 
@@ -390,9 +403,6 @@ function gerarGrade() {
     const blankHeader = document.createElement('div');
     blankHeader.classList.add('header');
     gradeHorarios.appendChild(blankHeader);
-
-    // Nomes das salas, inicializando com valores padrão
-    let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Patio' ];
 
     // Cabeçalhos com os nomes das salas e editáveis
     salas.forEach((sala, index) => {
@@ -422,12 +432,36 @@ function gerarGrade() {
     });
 }
 
+
+function atualizarSelectHorarios() {
+    const select = document.getElementById('horaInicioAtividade');
+    select.innerHTML = '';
+
+    horarios.forEach(hora => {
+        const option = document.createElement('option');
+        option.value = hora;
+        option.textContent = hora;
+        select.appendChild(option);
+    });
+
+    const selectFim = document.getElementById('horaFimAtividade');
+    selectFim.innerHTML = '';
+    horarios.forEach(hora => {
+        const option = document.createElement('option');
+        option.value = hora;
+        option.textContent = hora;
+        selectFim.appendChild(option);
+    });
+
+    const option = document.createElement('option');
+    option.value = '18:20';
+    option.textContent = '18:20';
+    selectFim.appendChild(option);
+}
 // Função para preencher o select de salas no cadastro de atividades
 function preencherOpcoesSalas() {
     const selectSalas = document.getElementById('salasAtividade');
     selectSalas.innerHTML = ''; // Limpa qualquer valor anterior
-
-    let salas = ['Sala 1', 'Sala 2', 'Sala 3', 'Sala 4', 'Sala 5', 'Sala 6', 'Sala 7'];
 
     salas.forEach((sala, index) => {
         const option = document.createElement('option');
@@ -445,30 +479,20 @@ function cadastrarAtividade() {
     const salasSelecionadas = Array.from(document.getElementById('salasAtividade').selectedOptions).map(option => option.value);
     const observacao = document.getElementById('observacaoAtividade').value.trim();
     const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value);
-    let horaInicioPrimeiroNum;
-    let horaFimPrimeiroNum;
+    let horaInicioPrimeiroNum=Number(horaInicio.slice(0, 2));
+    let horaInicioSegundoNum=Number(horaInicio.slice(3, 5));
+    let horaFimPrimeiroNum=Number(horaFim.slice(0, 2));
+    let horaFimSegundoNum=Number(horaFim.slice(3, 5));
+    let totalminutosInicio=horaInicioPrimeiroNum*60+horaInicioSegundoNum;
+    let totalminutosFim=horaFimPrimeiroNum*60+horaFimSegundoNum;
 
-    //trecho para obter valor numerio correto da string hora inicial para comparação
-    if(horaInicio.length>4){
-        horaInicioPrimeiroNum = Number(horaInicio.slice(0, 2));
-    }else{
-        horaInicioPrimeiroNum = Number(horaInicio.slice(0, 1));
-    }
-
-    console.log(`HoraInicial em numero ${horaInicioPrimeiroNum}`);
-
-    //trecho para obter valor numerio correto da string hora final para comparação
-
-    if(horaFim.length>4){
-        horaFimPrimeiroNum = Number(horaFim.slice(0, 2));
-    }else{
-        horaFimPrimeiroNum = Number(horaFim.slice(0, 1));
-    }
-    
-
+    console.log(`HoraInicial primeiro numero ${horaInicioPrimeiroNum}`);
+    console.log(`HoraInicial segundo numero ${horaInicioSegundoNum}`);
+    console.log(`HoraFim primeiro numero ${horaFimPrimeiroNum}`);
+    console.log(`HoraFim segundo numero ${horaFimSegundoNum}`);
     console.log(`Tentando cadastrar atividade: ${nomeAtividade}, Início: ${horaInicio}, Fim: ${horaFim}, Sala: ${salasSelecionadas}, horainicial em numero ${horaInicioPrimeiroNum}`);
 
-    if (nomeAtividade && horaInicio && horaFim && salasSelecionadas.length > 0 && numFuncionarios > 0 && horaInicioPrimeiroNum<horaFimPrimeiroNum) {
+    if (nomeAtividade && horaInicio && horaFim && salasSelecionadas.length > 0 && numFuncionarios > 0 && totalminutosInicio<totalminutosFim) {
         salasSelecionadas.forEach(sala => {
             // Verificar se já existe uma atividade no mesmo horário e sala
             const atividadeExistente = atividades.find(a => a.horarioInicio === horaInicio && a.sala === sala && a.diaSemana === diaSelecionado);
@@ -596,6 +620,7 @@ function atualizarGradeComAtividades() {
     atividadesFiltradas.forEach(atividade => {
         const horaFormatada = String(atividade.horarioInicio).padStart(5, '0'); // Garante que o horário tenha formato HH:MM
         const cellId = `${horaFormatada}-${atividade.sala}`.replace(/\s+/g, '');
+        console.log(`Procurando célula com ID: ${cellId}`);
         const cell = document.getElementById(cellId);
     
         console.log(cell)
@@ -677,7 +702,7 @@ function atualizarSelecaoSalas() {
     });
 }
 
-// Função para remover um funcionário de todas as atividades quando o funcionario deixar de existir
+// Função para remover um funcionário de todas as atividades quando o funcionario deixar de existir no array de funcionários
 function removerFuncionarioDeTodasAtividades(nomeFuncionario) {
     atividades.forEach(atividade => {
         if (Array.isArray(atividade.funcionariosAlocados)) {
@@ -704,7 +729,6 @@ function removerFuncionarioAtividadeEspecifica(event) {
     console.log(atividades)
     const atividade = atividades.find(a => a.horarioInicio === horario && a.sala === sala && a.diaSemana === diaSelecionado);
     
-
 
     if (atividade) {
 
@@ -831,9 +855,6 @@ function verificarAtividades() {
          document.getElementById('statusAtividadesPreenchidas').innerHTML = '';
     }
 
-
-    
-
 }
 
 // Inicializar grade de horários na tela
@@ -849,15 +870,14 @@ window.onload = () => {
         atualizarGradeComAtividades();
         atualizarListaFuncionarios();
         atualizarSelecaoSalas();
+        atualizarSelectHorarios();
     });
 
     carregarAtividadesIndexDB().then(() => {
         console.log('Atividades no array ',atividades);
         atualizarGradeComAtividades();
+        atualizarSelectHorarios();
 
     });
-
-
-
 
 };
