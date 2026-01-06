@@ -5,25 +5,26 @@ let contagemCiclos = 0;
 let dbCarregado = null;
 let diaSelecionado = "segunda";
 const horarios = [
-    "06:10",
-    "07:00",
+    "06:10",//entrada de alguns funcionarios
+    "07:00",//entrada das turmas da manhã
     "07:50",
     "08:40",
-    // intervalo 09:30 → 09:50
+    "09:30",
+    // intervalo 09:30 ~ 09:50
     "09:50",
     "10:40",
     "11:30",
     "12:20",
-    // intervalo almoço
-    "13:00",
+    "13:00",//entrada das turmas da tarde
     "13:50",
     "14:40",
     "15:30",
-    // intervalo 15:30 → 15:50
+    // intervalo 15:30 ~ 15:50
     "15:50",
     "16:40",
     "17:30"];
 
+//const horarios = Array.from({ length: 12 }, (_, i) => `${String(i + 6).padStart(2, '0')}:00`); // Horários formatados como 06:00, 07:00, etc. se necessario mudar os horarios para horas cheias
 
 
 document.getElementById("diaSemanaSelect").addEventListener("change", (e) => {
@@ -90,7 +91,7 @@ async function obterNomeFuncionario(idFuncionario) {
         return request.result.nome;
     }
     request.onerror = function (event) {
-    // Trata erro!
+    // Trata erro
         console.log('Não foi possível obter o nome do funcionário com id ' + idFuncionario);
     };
 }
@@ -164,7 +165,7 @@ async function carregarFuncionariosIndexDB() {
     return new Promise((resolve, reject) => {
         const getAll = store.getAll();
         getAll.onsuccess = () => {
-            funcionarios = getAll.result; // <-- substitui o array
+            funcionarios = getAll.result; // substitui o array
             resolve(funcionarios);
             console.log('Funcionários carregados do IndexedDB:', funcionarios);
         };
@@ -240,7 +241,6 @@ async function removerFuncAlocadoAtividadeIndexDB(idAtividade, nomeFuncionario) 
         const getRequest = store.get(idAtividade);
         getRequest.onsuccess = function (event) {
             const atividadeData = getRequest.result;
-            // console.log('Dados da atividade:', atividadeData);
             console.log('Funcionários alocados antes da remoção:', atividadeData.funcionariosAlocados);
 
             if (atividadeData.funcionariosAlocados) {
@@ -295,7 +295,7 @@ async function carregarAtividadesIndexDB() {
     });
 }
 
-//função que verifica se o funcionário está alocado/ocupado em alguma atividade no dia e horário especificados, se sim retorna true, senão false
+//função que verifica se o funcionário está alocado/ocupado em alguma atividade no dia e horário especificados, se sim retorna true, se não false
 function funcionarioOcupadoNoDiaHorario(nomeFuncionario, dia, horario) {
     return atividades.some(atividade =>
         atividade.diaSemana === dia &&
@@ -304,7 +304,6 @@ function funcionarioOcupadoNoDiaHorario(nomeFuncionario, dia, horario) {
     );
 }
 
-// Chamar a função de atualização dos dropdowns após cadastrar um novo funcionário
 function cadastrarFuncionario() {
     const nome = document.getElementById('nomeFuncionario').value.trim();
     const erroDiv = document.getElementById('mensagemErroFuncionario');
@@ -392,8 +391,6 @@ function atualizarListaFuncionarios() {
 function gerarGrade() {
     contagemCiclos++;
     console.log(`Gerando grade de horários. Contagem de ciclos: passou ${contagemCiclos} vezes pelo gerarGrade()`);
-    
-    // const horarios = Array.from({ length: 12 }, (_, i) => `${String(i + 6).padStart(2, '0')}:00`); // Horários formatados como 06:00, 07:00, etc.
     console.log('Horários gerados para a grade:', horarios);
     const gradeHorarios = document.getElementById('gradeHorarios');
 
@@ -413,7 +410,6 @@ function gerarGrade() {
     });
 
     atualizarSelecaoSalas(); 
-    // Horários de 06:00 até 17:00 e as células correspondentes
     horarios.forEach(hora => {
         // Coluna com o horário
         const horaDiv = document.createElement('div');
@@ -425,13 +421,11 @@ function gerarGrade() {
             const div = document.createElement('div');
             const idGerado = `${hora}-${sala}`.replace(/\s+/g, ''); // Remove espaços extras do ID
             div.id = idGerado;  // ID correto com espaço entre 'Sala' e o número
-            // console.log(`Gerando célula com ID: ${div.id}`); // Verificação via console
             div.innerHTML = `<strong>${hora}</strong>`;
             gradeHorarios.appendChild(div);
         });
     });
 }
-
 
 function atualizarSelectHorarios() {
     const select = document.getElementById('horaInicioAtividade');
@@ -500,7 +494,7 @@ function cadastrarAtividade() {
             if (atividadeExistente) {
                 console.log(`Sobrescrevendo atividade existente: ${atividadeExistente.atividade} na sala ${sala} às ${horaInicio}`);
                 
-                // Remover do IndexedDB
+                // Remover do IndexedDB caso exista uma atividade para sobrescrever
                 obterIdAtividadeIndexDB(atividadeExistente.identificadorUnico).then(idAtividade => {
                     if (idAtividade) {
                         deletarAtividadeIndexDB(idAtividade).then(() => {
@@ -514,7 +508,7 @@ function cadastrarAtividade() {
                 // Liberar os funcionários alocados da atividade existente
                 liberarFuncionarios(atividadeExistente);
 
-                // Remover a atividade anterior da lista
+                // Remover a atividade anterior do array de atividades
                 atividades = atividades.filter(a => !(a.horarioInicio === horaInicio && a.sala === sala && a.diaSemana === diaSelecionado));
             }
 
@@ -543,7 +537,6 @@ function cadastrarAtividade() {
                 funcionariosNecessarios: numFuncionarios,
                 funcionariosAlocados: [],
                 diaSemana: diaSelecionado
-
             });
 
         });
@@ -857,12 +850,82 @@ function verificarAtividades() {
 
 }
 
+//função que foi usada para realizar o teste de estresse no sistema, preenchendo o banco de dados com atividades em todas as salas, horários e dias da semana
+async function testeDesempenho() {
+    console.log("|-|-|-|Iniciando verificação para teste de desempenho completo...|-|-|-|");
+    if(atividades.length > 0) {
+        console.warn("O teste de desempenho só pode ser executado em um banco de dados vazio. Por favor, limpe as atividades antes de executar o teste.");
+        return;
+    }
+    console.log(" Iniciando teste de desempenho completo...");
+
+    const diasSemana = ["segunda", "terça", "quarta", "quinta", "sexta"];
+
+    if (salas.length < 7 || funcionarios.length < 7) {
+        console.error("É necessário pelo menos 7 salas e 7 funcionários.");
+        return;
+    }
+
+    let atividadesGeradas = 0;
+    for (const dia of diasSemana) {
+        for (let i = 0; i < salas.length; i++) {
+            const sala = salas[i];
+            const funcionario = funcionarios[i]; // 1 funcionário fixo por sala
+
+            for (const horario of horarios) {
+                if (horario === horarios[horarios.length - 1]) {
+                    const atividade = {
+                    atividade: "Atividade Teste",
+                    horarioInicio: horario,
+                    horarioFim: '18:20',
+                    sala: sala,
+                    diaSemana: dia,
+                    observacao: "Gerado para teste de desempenho",
+                    funcionariosNecessarios: 1,
+                    funcionariosAlocados: [funcionario.nome]
+                    };
+
+                     atividades.push(atividade);
+
+                    // Salva no IndexedDB
+                    await adicionarAtividadeIndexDB(atividade);
+                    atividadesGeradas++;
+                }else{
+                    const atividade = {
+                        atividade: "Atividade Teste",
+                        horarioInicio: horario,
+                        horarioFim: horarios[horarios.indexOf(horario) +1],
+                        sala: sala,
+                        diaSemana: dia,
+                        observacao: "Gerado para teste de desempenho",
+                        funcionariosNecessarios: 1,
+                        funcionariosAlocados: [funcionario.nome]
+                    };
+
+                    // Atualiza estruturas em memória
+                    atividades.push(atividade);
+
+                    // Salva no IndexedDB
+                    await adicionarAtividadeIndexDB(atividade);
+                    atividadesGeradas++;
+                }
+            }
+        }
+    }
+
+
+    console.log(`Total de atividades geradas: ${atividadesGeradas}`);
+    console.log("Atividades geradas para o teste de desempenho:", atividades);
+    atualizarGradeComAtividades();
+    console.log(" Teste de desempenho finalizado com sucesso!");
+}
+
 // Inicializar grade de horários na tela
 window.onload = () => {
     
-    //carrega os funcionarios do indexedDB ao abrir a pagina
     abrirBanco();
 
+    //carrega os funcionarios do indexedDB para a pagina ao abrir a pagina
     carregarFuncionariosIndexDB().then(() => {
         console.log('Funcionarios no array ',funcionarios);
         gerarGrade();
@@ -873,11 +936,18 @@ window.onload = () => {
         atualizarSelectHorarios();
     });
 
+
+    //carrega as atividades do indexedDB para a pagina ao abrir a pagina
     carregarAtividadesIndexDB().then(() => {
         console.log('Atividades no array ',atividades);
+        gerarGrade();
+        preencherOpcoesSalas();
         atualizarGradeComAtividades();
+        atualizarListaFuncionarios();
+        atualizarSelecaoSalas();
         atualizarSelectHorarios();
 
     });
+
 
 };
