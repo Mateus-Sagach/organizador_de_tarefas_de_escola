@@ -6,5 +6,5 @@
   
  Com a implementação dessa solução, espera-se alcançar uma distribuição equilibrada das atividades entre os funcionários, evitando sobrecargas e promovendo um ambiente de trabalho mais justo e harmonioso. Essa organização mais eficiente pode contribuir para melhorar o clima organizacional, impactando positivamente na produtividade e no bem-estar da equipe. Além disso, a simplificação do processo administrativo pode trazer ganhos em termos de eficiência e praticidade para a gestão escolar.
 
-Segue abaixo link no github pages do link do site:
+Segue link no github pages do link do site:
 https://mateus-sagach.github.io/organizador_de_tarefas_de_escola/
